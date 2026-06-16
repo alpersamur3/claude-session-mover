@@ -1,5 +1,12 @@
 # Claude Session Mover · Claude Sohbet Taşıyıcı
 
+![Windows](https://img.shields.io/badge/Windows-tested-2ea44f)
+![macOS · Linux](https://img.shields.io/badge/macOS%20%C2%B7%20Linux-experimental-orange)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![GUI](https://img.shields.io/badge/GUI-Tkinter-8a2be2)
+![i18n](https://img.shields.io/badge/i18n-TR%20%2F%20EN-informational)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 **Dil / Language:  [🇹🇷 Türkçe](#tr) · [🇬🇧 English](#en)**
 
 Claude masaüstü uygulamasındaki sohbetleri bir hesaptan diğerine taşıyan küçük bir

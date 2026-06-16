@@ -1,0 +1,58 @@
+name: Bug report / Hata bildirimi
+description: Report a bug or detection problem / Bir hata veya tespit sorunu bildir
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! / Bildirdiğin için teşekkürler!
+        Please fill in the details below. / Lütfen aşağıdaki bilgileri doldur.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system / İşletim sistemi
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other / Diğer
+    validations:
+      required: true
+  - type: input
+    id: pyversion
+    attributes:
+      label: Python version / Python sürümü
+      description: "`python --version` / `py --version`"
+      placeholder: "3.12.x"
+    validations:
+      required: true
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which tool / Hangi araç
+      options:
+        - "csmui.py (GUI)"
+        - "csm.py (CLI)"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? / Ne oldu?
+      description: Expected vs. actual behaviour / Beklenen ve gerçekleşen davranış
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics / Tanı çıktısı
+      description: >
+        If no store was found, run `py csm.py` (or `python3 csm.py`) and paste the
+        DIAGNOSTICS section. / Depo bulunamadıysa `py csm.py` çalıştırıp "TANI
+        BİLGİSİ" bölümünü yapıştır.
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else / Ek bilgi
+      description: Screenshots, logs, store path, etc. / Ekran görüntüsü, günlük, depo yolu vb.
