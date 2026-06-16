@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Claude Sohbet Taşıyıcı — Tkinter Arayüzü (csmui.py)
-===================================================
-csm.py'nin grafik arayüzlü, daha ayrıntılı sürümü. Claude masaüstü
-uygulamasının sohbet listeleme kayıtlarını (local_*.json) bir hesaptan
-diğerine kopyalar/üzerine yazar.
+Claude Sohbet Taşıyıcı — Tkinter Arayüzü (csmui.py)  /  Claude Chat Mover — GUI
+==============================================================================
+csm.py'nin grafik arayüzlü, daha ayrıntılı sürümü. Sağ üstten TR/EN dil seçimi.
+Ayrıntı için README.md.
 
-Ayrıntılı bilgi ve "neden gerekli" açıklaması için README.md dosyasına bakın.
-
-ÇALIŞTIRMA (gerçek Python + tkinter için py launcher önerilir):
-    py csmui.py
+Çalıştırma / Run:
+    py csmui.py               (Türkçe)
+    py csmui.py --en          (English)
+    py csmui.py --demo        (repo içindeki sample-data ile dene / try bundled sample data)
 
 ÖNEMLİ: Çalıştırmadan önce Claude masaüstü uygulamasını TAMAMEN kapatın.
 """
@@ -23,14 +22,28 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from i18n import Translator, detect_lang  # noqa: E402
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+IS_DEMO = "--demo" in sys.argv[1:]
+
 # ----------------------------------------------------------------------------
-# ÇEKİRDEK MANTIK (csm.py ile aynı)
+# ÇEKİRDEK MANTIK / CORE
 # ----------------------------------------------------------------------------
 
-PROJECTS_DIR = Path.home() / ".claude" / "projects"
+def projects_dir() -> Path:
+    if IS_DEMO:
+        return SCRIPT_DIR / "sample-data" / "projects"
+    env = os.environ.get("CSM_PROJECTS")
+    return Path(env) if env else (Path.home() / ".claude" / "projects")
 
 
 def candidate_bases() -> list:
+    if IS_DEMO:
+        return [SCRIPT_DIR / "sample-data" / "claude-code-sessions"]
+    if os.environ.get("CSM_BASE"):
+        return [Path(p) for p in os.environ["CSM_BASE"].split(os.pathsep) if p]
     appdata = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
     local = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
     cands = [
@@ -45,7 +58,6 @@ def candidate_bases() -> list:
 
 
 def existing_bases() -> list:
-    """Var olan, fiziksel olarak benzersiz base'ler (realpath ile çözülür)."""
     seen = {}
     for c in candidate_bases():
         try:
@@ -69,15 +81,16 @@ def existing_bases() -> list:
 
 def build_transcript_index() -> dict:
     index = {}
-    if PROJECTS_DIR.exists():
-        for p in PROJECTS_DIR.rglob("*.jsonl"):
+    pdir = projects_dir()
+    if pdir.exists():
+        for p in pdir.rglob("*.jsonl"):
             index.setdefault(p.stem, p)
     return index
 
 
 def human_size(n) -> str:
     if n is None:
-        return "yok"
+        return "—"
     try:
         n = float(n)
     except Exception:
@@ -143,17 +156,12 @@ def make_session(entry_path, entry, tindex, base) -> dict:
     except Exception:
         rel = Path(entry_path.parent.parent.name) / entry_path.parent.name / entry_path.name
     return {
-        "path": entry_path,
-        "rel": rel,
-        "entry": entry,
-        "title": entry.get("title") or "(başlıksız)",
-        "cwd": entry.get("cwd", "?"),
-        "cli": cli,
+        "path": entry_path, "rel": rel, "entry": entry,
+        "title": entry.get("title") or "(…)",
+        "cwd": entry.get("cwd", "?"), "cli": cli,
         "sid": entry.get("sessionId", entry_path.stem),
-        "last": entry.get("lastActivityAt", 0),
-        "transcript": transcript,
-        "rec_size": file_size(entry_path),
-        "tr_size": file_size(transcript),
+        "last": entry.get("lastActivityAt", 0), "transcript": transcript,
+        "rec_size": file_size(entry_path), "tr_size": file_size(transcript),
     }
 
 
@@ -190,8 +198,7 @@ def target_rel_path(target, source_session) -> Path:
 
 def find_conflicts(target, source_session) -> list:
     conflicts, seen = [], set()
-    s_cli = source_session.get("cli")
-    s_sid = source_session.get("sid")
+    s_cli, s_sid = source_session.get("cli"), source_session.get("sid")
     for t in target["sessions"]:
         if (s_cli and t["cli"] == s_cli) or (s_sid and t["sid"] == s_sid):
             if t["rel"] not in seen:
@@ -209,7 +216,7 @@ def mirror_remove(bases, rels):
                 if p.exists():
                     p.unlink()
             except Exception as e:
-                errs.append(f"silinemedi: {p} ({e})")
+                errs.append(f"{p} ({e})")
     return errs
 
 
@@ -222,16 +229,15 @@ def mirror_write(bases, src_file, rel):
             shutil.copy2(src_file, dst)
             written.append(dst)
         except Exception as e:
-            errs.append(f"yazılamadı: {dst} ({e})")
+            errs.append(f"{dst} ({e})")
     return written, errs
 
 
 # ----------------------------------------------------------------------------
-# ARAYÜZ
+# ARAYÜZ / GUI
 # ----------------------------------------------------------------------------
 
-# Renk paleti
-CLR_BANNER = "#b45309"      # turuncu uyarı
+CLR_BANNER = "#b45309"
 CLR_BG = "#f3f4f6"
 CLR_ACCENT = "#2563eb"
 CLR_ACCENT_HOVER = "#1d4ed8"
@@ -241,20 +247,16 @@ CLR_STRIPE = "#eef2f7"
 CLR_DANGER = "#b91c1c"
 
 
-def acc_label(acc):
-    last = max((s["last"] for s in acc["sessions"]), default=0)
-    return f"{acc['id'][:8]}…   •   {len(acc['sessions'])} sohbet   •   son {fmt_time(last)}"
-
-
 def run_gui():
     import tkinter as tk
     from tkinter import ttk, messagebox, scrolledtext
 
+    tr = Translator(detect_lang())
+
     class ConflictDialog(tk.Toplevel):
-        """Boyut karşılaştırması gösterip 'üzerine yazılsın mı?' sorar."""
         def __init__(self, parent, src, conflicts, remaining):
             super().__init__(parent)
-            self.title("Çakışma — sohbet hedefte zaten var")
+            self.title(tr.t("cd_title"))
             self.configure(bg="white")
             self.resizable(False, False)
             self.result = ("skip", False)
@@ -262,24 +264,23 @@ def run_gui():
 
             frm = ttk.Frame(self, padding=16, style="Card.TFrame")
             frm.pack(fill="both", expand=True)
-
-            ttk.Label(frm, text="⚠  Bu sohbet hedef hesapta zaten var",
-                      style="DlgTitle.TLabel").grid(row=0, column=0, columnspan=2, sticky="w")
-            ttk.Label(frm, text=src["title"], style="DlgSub.TLabel").grid(
-                row=1, column=0, columnspan=2, sticky="w", pady=(2, 12))
+            ttk.Label(frm, text=tr.t("cd_header"), style="DlgTitle.TLabel")\
+                .grid(row=0, column=0, columnspan=2, sticky="w")
+            ttk.Label(frm, text=src["title"], style="DlgSub.TLabel")\
+                .grid(row=1, column=0, columnspan=2, sticky="w", pady=(2, 12))
 
             tv = ttk.Treeview(frm, columns=("k", "h"), show="tree headings", height=4)
             tv.heading("#0", text="")
-            tv.heading("k", text="KAYNAK (yeni)")
-            tv.heading("h", text="HEDEF (mevcut)")
+            tv.heading("k", text=tr.t("cd_col_src"))
+            tv.heading("h", text=tr.t("cd_col_tgt"))
             tv.column("#0", width=140, anchor="w")
             tv.column("k", width=190, anchor="center")
             tv.column("h", width=190, anchor="center")
             c0 = conflicts[0]
             rows = [
-                ("Sohbet boyutu", human_size(src["tr_size"]), human_size(c0["tr_size"])),
-                ("Kayıt boyutu", human_size(src["rec_size"]), human_size(c0["rec_size"])),
-                ("Son tarih", fmt_time(src["last"]), fmt_time(c0["last"])),
+                (tr.t("cd_chat_size"), human_size(src["tr_size"]), human_size(c0["tr_size"])),
+                (tr.t("cd_rec_size"), human_size(src["rec_size"]), human_size(c0["rec_size"])),
+                (tr.t("cd_last"), fmt_time(src["last"]), fmt_time(c0["last"])),
                 ("cliSessionId", (src["cli"][:8] + "…") if src["cli"] else "-",
                  (c0["cli"][:8] + "…") if c0["cli"] else "-"),
             ]
@@ -287,23 +288,20 @@ def run_gui():
                 tv.insert("", "end", text=label, values=(k, h))
             tv.grid(row=2, column=0, columnspan=2, sticky="we")
 
-            note = ""
             if len(conflicts) > 1:
-                note = f"(Hedefte {len(conflicts)} eşleşen kayıt var; hepsi değişecek.)"
-            if note:
-                ttk.Label(frm, text=note, style="Muted.TLabel").grid(
-                    row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
+                ttk.Label(frm, text=tr.t("cd_multi", n=len(conflicts)), style="Muted.TLabel")\
+                    .grid(row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
 
             self.apply_all = tk.BooleanVar(value=False)
             if remaining > 0:
-                ttk.Checkbutton(frm, text=f"Bu kararı kalan {remaining} çakışmaya da uygula",
-                                variable=self.apply_all).grid(
-                    row=4, column=0, columnspan=2, sticky="w", pady=(10, 4))
+                ttk.Checkbutton(frm, text=tr.t("cd_apply_all", n=remaining),
+                                variable=self.apply_all)\
+                    .grid(row=4, column=0, columnspan=2, sticky="w", pady=(10, 4))
 
             btns = ttk.Frame(frm, style="Card.TFrame")
             btns.grid(row=5, column=0, columnspan=2, sticky="e", pady=(14, 0))
-            ttk.Button(btns, text="Atla", command=self._skip).pack(side="right", padx=4)
-            ttk.Button(btns, text="Üzerine yaz", style="Accent.TButton",
+            ttk.Button(btns, text=tr.t("cd_skip"), command=self._skip).pack(side="right", padx=4)
+            ttk.Button(btns, text=tr.t("cd_overwrite"), style="Accent.TButton",
                        command=self._overwrite).pack(side="right", padx=4)
 
             self.bind("<Escape>", lambda e: self._skip())
@@ -331,20 +329,22 @@ def run_gui():
             self.destroy()
 
     class App(tk.Tk):
+        HEADINGS = (("title", "g_col_title"), ("cwd", "g_col_folder"),
+                    ("last", "g_col_last"), ("tr", "g_col_chat"), ("rec", "g_col_record"))
+
         def __init__(self):
             super().__init__()
-            self.title("Claude Sohbet Taşıyıcı")
-            self.geometry("1180x740")
-            self.minsize(980, 600)
+            self.tr = tr
+            self.geometry("1180x760")
+            self.minsize(1000, 620)
             self.configure(bg=CLR_BG)
-
             self.bases = []
             self.tindex = {}
-            self.accounts = []        # birincil base'den tüm hesaplar
-            self.target_accounts = [] # hedefte gösterilenler (kaynak hariç)
-
+            self.accounts = []
+            self.target_accounts = []
             self._init_style()
             self._build()
+            self.retranslate(initial=True)
             self.reload()
 
         # ---- stil ----
@@ -367,6 +367,7 @@ def run_gui():
                          font=("Segoe UI", 11, "bold"), foreground=CLR_DANGER)
             st.configure("DlgSub.TLabel", background="white",
                          font=("Segoe UI", 10), foreground=CLR_ACCENT)
+            st.configure("Bold.TLabel", font=("Segoe UI", 9, "bold"))
             st.configure("TButton", font=("Segoe UI", 9), padding=4)
             st.configure("Accent.TButton", font=("Segoe UI", 10, "bold"),
                          foreground="white", background=CLR_ACCENT, padding=6)
@@ -375,45 +376,52 @@ def run_gui():
             st.configure("Treeview", rowheight=27, font=("Segoe UI", 9),
                          fieldbackground="white", background="white")
             st.configure("Treeview.Heading", font=("Segoe UI", 9, "bold"))
-            st.configure("TCombobox", padding=3)
 
-        # ---- arayüz kurulumu ----
+        # ---- arayüz ----
         def _build(self):
-            # Uyarı bandı
+            # banner
             banner = tk.Frame(self, bg=CLR_BANNER)
             banner.pack(fill="x")
-            tk.Label(banner, bg=CLR_BANNER, fg="white", anchor="w",
-                     font=("Segoe UI", 9, "bold"),
-                     text="  ⚠  Taşımadan önce Claude masaüstü uygulamasını TAMAMEN kapatın "
-                          "(sistem tepsisinden de çıkın). İşlem bitince yeniden açıp 🔄 Yenile deyin.")\
-                .pack(fill="x", pady=4)
+            self.banner_lbl = tk.Label(banner, bg=CLR_BANNER, fg="white", anchor="w",
+                                       font=("Segoe UI", 9, "bold"))
+            self.banner_lbl.pack(fill="x", pady=4)
 
-            # Araç çubuğu
+            # toolbar
             top = ttk.Frame(self, padding=(12, 8))
             top.pack(fill="x")
-            ttk.Label(top, text="📁 Depo:", font=("Segoe UI", 9, "bold")).pack(side="left")
-            self.stores_var = tk.StringVar(value="taranıyor…")
+            self.lbl_store = ttk.Label(top, style="Bold.TLabel")
+            self.lbl_store.pack(side="left")
+            self.stores_var = tk.StringVar(value="…")
             ttk.Label(top, textvariable=self.stores_var, style="Store.TLabel").pack(side="left", padx=(6, 0))
-            ttk.Button(top, text="🔄 Yenile", command=self.reload).pack(side="right")
 
-            # Orta bölüm: sol (liste) | sağ (önizleme)
+            self.btn_refresh = ttk.Button(top, command=self.reload)
+            self.btn_refresh.pack(side="right")
+            self.lang_combo = ttk.Combobox(top, state="readonly", width=10,
+                                           values=["Türkçe", "English"])
+            self.lang_combo.current(1 if self.tr.lang == "en" else 0)
+            self.lang_combo.pack(side="right", padx=8)
+            self.lang_combo.bind("<<ComboboxSelected>>", lambda e: self.on_lang_change())
+            self.lbl_lang = ttk.Label(top, style="Bold.TLabel")
+            self.lbl_lang.pack(side="right")
+
+            # orta
             paned = ttk.Panedwindow(self, orient="horizontal")
             paned.pack(fill="both", expand=True, padx=12, pady=(0, 6))
 
-            # --- sol ---
             left = ttk.Frame(paned, padding=(0, 0, 6, 0))
             paned.add(left, weight=3)
-
             srow = ttk.Frame(left)
             srow.pack(fill="x", pady=(0, 6))
-            ttk.Label(srow, text="Kaynak hesap:", font=("Segoe UI", 9, "bold")).pack(side="left")
-            self.source_combo = ttk.Combobox(srow, state="readonly", width=44)
+            self.lbl_source = ttk.Label(srow, style="Bold.TLabel")
+            self.lbl_source.pack(side="left")
+            self.source_combo = ttk.Combobox(srow, state="readonly", width=46)
             self.source_combo.pack(side="left", padx=6)
             self.source_combo.bind("<<ComboboxSelected>>", lambda e: self.on_source_change())
 
             frow = ttk.Frame(left)
             frow.pack(fill="x", pady=(0, 6))
-            ttk.Label(frow, text="🔍 Filtre:").pack(side="left")
+            self.lbl_filter = ttk.Label(frow)
+            self.lbl_filter.pack(side="left")
             self.filter_var = tk.StringVar()
             fe = ttk.Entry(frow, textvariable=self.filter_var)
             fe.pack(side="left", fill="x", expand=True, padx=6)
@@ -423,17 +431,13 @@ def run_gui():
 
             tw = ttk.Frame(left)
             tw.pack(fill="both", expand=True)
-            cols = ("title", "cwd", "last", "tr", "rec")
-            self.tree = ttk.Treeview(tw, columns=cols, show="headings", selectmode="extended")
-            for c, txt, w, anc, stretch in (
-                ("title", "Başlık", 240, "w", True),
-                ("cwd", "Klasör", 230, "w", True),
-                ("last", "Son tarih", 120, "center", False),
-                ("tr", "Sohbet", 78, "e", False),
-                ("rec", "Kayıt", 78, "e", False),
-            ):
-                self.tree.heading(c, text=txt)
-                self.tree.column(c, width=w, anchor=anc, stretch=stretch)
+            self.tree = ttk.Treeview(tw, columns=[c for c, _ in self.HEADINGS],
+                                     show="headings", selectmode="extended")
+            widths = {"title": (240, "w", True), "cwd": (230, "w", True),
+                      "last": (120, "center", False), "tr": (78, "e", False), "rec": (78, "e", False)}
+            for col, _ in self.HEADINGS:
+                w, anc, stretch = widths[col]
+                self.tree.column(col, width=w, anchor=anc, stretch=stretch)
             self.tree.tag_configure("odd", background=CLR_STRIPE)
             self.tree.tag_configure("notr", foreground=CLR_DANGER)
             vsb = ttk.Scrollbar(tw, orient="vertical", command=self.tree.yview)
@@ -442,34 +446,32 @@ def run_gui():
             vsb.pack(side="right", fill="y")
             self.tree.bind("<<TreeviewSelect>>", self.on_select)
 
-            # --- sağ (önizleme) ---
-            right = ttk.Labelframe(paned, text=" Önizleme ", padding=10)
-            paned.add(right, weight=2)
-            self.detail_var = tk.StringVar(value="Soldan bir sohbet seçin…")
-            ttk.Label(right, textvariable=self.detail_var, justify="left",
+            self.preview_frame = ttk.Labelframe(paned, padding=10)
+            paned.add(self.preview_frame, weight=2)
+            self.detail_var = tk.StringVar(value="")
+            ttk.Label(self.preview_frame, textvariable=self.detail_var, justify="left",
                       anchor="nw", wraplength=380, font=("Segoe UI", 9)).pack(fill="x")
-            ttk.Separator(right).pack(fill="x", pady=8)
-            ttk.Label(right, text="İlk mesaj:", style="Muted.TLabel").pack(anchor="w")
-            self.preview = scrolledtext.ScrolledText(right, height=14, wrap="word",
+            ttk.Separator(self.preview_frame).pack(fill="x", pady=8)
+            self.lbl_firstmsg = ttk.Label(self.preview_frame, style="Muted.TLabel")
+            self.lbl_firstmsg.pack(anchor="w")
+            self.preview = scrolledtext.ScrolledText(self.preview_frame, height=14, wrap="word",
                                                      font=("Segoe UI", 9), relief="flat",
                                                      background="white")
             self.preview.pack(fill="both", expand=True, pady=(4, 0))
             self.preview.configure(state="disabled")
 
-            # Hedef + taşı
             trow = ttk.Frame(self, padding=(12, 4))
             trow.pack(fill="x")
-            ttk.Label(trow, text="Hedef hesap:", font=("Segoe UI", 9, "bold")).pack(side="left")
-            self.target_combo = ttk.Combobox(trow, state="readonly", width=44)
+            self.lbl_target = ttk.Label(trow, style="Bold.TLabel")
+            self.lbl_target.pack(side="left")
+            self.target_combo = ttk.Combobox(trow, state="readonly", width=46)
             self.target_combo.pack(side="left", padx=6)
-            self.move_btn = ttk.Button(trow, text="Seçili sohbet(leri) taşı  →",
-                                       style="Accent.TButton", command=self.on_move)
+            self.move_btn = ttk.Button(trow, style="Accent.TButton", command=self.on_move)
             self.move_btn.pack(side="left", padx=12)
 
-            # Günlük
-            logf = ttk.Labelframe(self, text=" İşlem günlüğü ", padding=6)
-            logf.pack(fill="both", expand=False, padx=12, pady=(4, 4))
-            self.log = scrolledtext.ScrolledText(logf, height=8, wrap="word",
+            self.log_frame = ttk.Labelframe(self, padding=6)
+            self.log_frame.pack(fill="both", expand=False, padx=12, pady=(4, 4))
+            self.log = scrolledtext.ScrolledText(self.log_frame, height=8, wrap="word",
                                                  font=("Consolas", 9), relief="flat")
             self.log.pack(fill="both", expand=True)
             self.log.tag_config("ok", foreground=CLR_OK)
@@ -477,12 +479,43 @@ def run_gui():
             self.log.tag_config("err", foreground=CLR_DANGER)
             self.log.configure(state="disabled")
 
-            # Durum çubuğu
-            self.status_var = tk.StringVar(value="Hazır.")
+            self.status_var = tk.StringVar(value="")
             status = tk.Frame(self, bg="#e5e7eb")
             status.pack(fill="x", side="bottom")
             tk.Label(status, textvariable=self.status_var, bg="#e5e7eb", anchor="w",
                      font=("Segoe UI", 8), fg="#374151").pack(fill="x", padx=8, pady=2)
+
+        # ---- i18n ----
+        def acc_label(self, acc):
+            last = max((s["last"] for s in acc["sessions"]), default=0)
+            return self.tr.t("g_acc_label", id=acc["id"][:8], n=len(acc["sessions"]), t=fmt_time(last))
+
+        def retranslate(self, initial=False):
+            self.title(self.tr.t("app_title"))
+            self.banner_lbl.config(text=self.tr.t("g_banner"))
+            self.lbl_store.config(text=self.tr.t("g_store"))
+            self.btn_refresh.config(text=self.tr.t("g_refresh"))
+            self.lbl_lang.config(text=self.tr.t("g_lang"))
+            self.lbl_source.config(text=self.tr.t("g_source"))
+            self.lbl_filter.config(text=self.tr.t("g_filter"))
+            self.preview_frame.config(text=self.tr.t("g_preview"))
+            self.lbl_firstmsg.config(text=self.tr.t("g_first_msg"))
+            self.lbl_target.config(text=self.tr.t("g_target"))
+            self.move_btn.config(text=self.tr.t("g_move_btn"))
+            self.log_frame.config(text=self.tr.t("g_log"))
+            for col, key in self.HEADINGS:
+                self.tree.heading(col, text=self.tr.t(key))
+            if not initial:
+                self._refresh_account_combos()
+                self.populate_sessions()
+                self.status(self.tr.t("g_ready"))
+            else:
+                self.detail_var.set(self.tr.t("g_pick_hint"))
+                self.status_var.set(self.tr.t("g_ready"))
+
+        def on_lang_change(self):
+            self.tr.set_lang("en" if self.lang_combo.current() == 1 else "tr")
+            self.retranslate()
 
         # ---- yardımcılar ----
         def logln(self, msg, tag=None):
@@ -497,7 +530,7 @@ def run_gui():
         def set_preview(self, text):
             self.preview.configure(state="normal")
             self.preview.delete("1.0", "end")
-            self.preview.insert("1.0", text or "(transkript bulunamadı)")
+            self.preview.insert("1.0", text or self.tr.t("g_no_transcript"))
             self.preview.configure(state="disabled")
 
         def current_source(self):
@@ -508,48 +541,54 @@ def run_gui():
             i = self.target_combo.current()
             return self.target_accounts[i] if 0 <= i < len(self.target_accounts) else None
 
-        # ---- olaylar / eylemler ----
+        def _refresh_account_combos(self):
+            prev_src = self.current_source()
+            self.source_combo["values"] = [self.acc_label(a) for a in self.accounts]
+            if self.accounts:
+                idx = 0
+                if prev_src:
+                    for j, a in enumerate(self.accounts):
+                        if a["id"] == prev_src["id"]:
+                            idx = j
+                            break
+                self.source_combo.current(idx)
+            self.refresh_target()
+
+        # ---- eylemler ----
         def reload(self):
             self.bases = existing_bases()
             if not self.bases:
-                self.stores_var.set("HİÇBİR DEPO BULUNAMADI")
-                self.status("Depo yok — gerçek Python ile çalıştırın: py csmui.py")
-                self.logln("[hata] Session deposu bulunamadı.", "err")
-                self.logln(f"       python : {sys.executable}")
+                self.stores_var.set(self.tr.t("g_no_store_short"))
+                self.status(self.tr.t("g_no_store_status"))
+                self.logln("[!] " + self.tr.t("no_store"), "err")
+                self.logln(f"    python: {sys.executable}")
                 for c in candidate_bases():
-                    self.logln(f"       [{'VAR' if c.exists() else 'YOK'}] {c}")
+                    self.logln(f"    [{'OK' if c.exists() else '--'}] {c}")
                 self.accounts, self.target_accounts = [], []
                 self.source_combo["values"] = []
                 self.target_combo["values"] = []
                 self.move_btn.state(["disabled"])
                 return
-
             self.stores_var.set("   |   ".join(str(b) for b in self.bases))
             self.tindex = build_transcript_index()
             self.accounts = load_accounts(self.bases[0], self.tindex)
-            self.source_combo["values"] = [acc_label(a) for a in self.accounts]
-
+            self.source_combo["values"] = [self.acc_label(a) for a in self.accounts]
             if len(self.accounts) < 2:
-                self.logln(f"[uyarı] Taşıma için 2 hesap gerekli, bulunan: {len(self.accounts)}", "warn")
+                self.logln(self.tr.t("g_need_two", n=len(self.accounts)), "warn")
                 self.move_btn.state(["disabled"])
             else:
                 self.move_btn.state(["!disabled"])
-
             if self.accounts:
                 self.source_combo.current(0)
                 self.on_source_change()
-            self.logln(f"[ok] {len(self.bases)} depo, {len(self.accounts)} hesap yüklendi.", "ok")
-            self.status(f"{len(self.accounts)} hesap • {len(self.bases)} fiziksel depo")
+            self.logln(self.tr.t("g_loaded", nb=len(self.bases), na=len(self.accounts)), "ok")
+            self.status(self.tr.t("g_status_loaded", a=len(self.accounts), b=len(self.bases)))
 
         def refresh_target(self):
-            """Hedef listesini kaynak HARİÇ yeniden kurar (önceki seçimi korur)."""
             src = self.current_source()
-            prev_id = None
-            ct = self.current_target()
-            if ct:
-                prev_id = ct["id"]
+            prev_id = self.current_target()["id"] if self.current_target() else None
             self.target_accounts = [a for a in self.accounts if not src or a["id"] != src["id"]]
-            self.target_combo["values"] = [acc_label(a) for a in self.target_accounts]
+            self.target_combo["values"] = [self.acc_label(a) for a in self.target_accounts]
             if not self.target_accounts:
                 self.target_combo.set("")
                 return
@@ -582,9 +621,9 @@ def run_gui():
                     tags.append("notr")
                 self.tree.insert("", "end", iid=str(i), values=vals, tags=tuple(tags))
                 shown += 1
-            self.count_var.set(f"{shown}/{len(acc['sessions'])} sohbet")
+            self.count_var.set(self.tr.t("g_count", shown=shown, total=len(acc["sessions"])))
             self.set_preview("")
-            self.detail_var.set("Soldan bir sohbet seçin…")
+            self.detail_var.set(self.tr.t("g_pick_hint"))
 
         def on_select(self, _evt=None):
             acc = self.current_source()
@@ -592,42 +631,42 @@ def run_gui():
             if not acc or not iid:
                 return
             s = acc["sessions"][int(iid)]
+            none = self.tr.t("none")
             self.detail_var.set(
-                f"Başlık    : {s['title']}\n"
-                f"Klasör    : {s['cwd']}\n"
-                f"Son tarih : {fmt_time(s['last'])}\n"
-                f"Sohbet    : {human_size(s['tr_size'])}     Kayıt: {human_size(s['rec_size'])}\n"
+                f"{self.tr.t('d_title')}    : {s['title']}\n"
+                f"{self.tr.t('d_folder')}    : {s['cwd']}\n"
+                f"{self.tr.t('d_last')} : {fmt_time(s['last'])}\n"
+                f"{self.tr.t('d_chat')}    : {human_size(s['tr_size'])}     "
+                f"{self.tr.t('d_record')}: {human_size(s['rec_size'])}\n"
                 f"cli       : {s['cli']}\n"
                 f"sid       : {s['sid']}\n"
-                f"transkript: {s['transcript'] if s['transcript'] else 'YOK'}")
+                f"{self.tr.t('d_transcript')}: {s['transcript'] if s['transcript'] else none}")
             self.set_preview(first_user_message(s["transcript"]))
-            self.status(f"Seçili: {s['title']}")
+            self.status(self.tr.t("g_selected", title=s["title"]))
 
         def on_move(self):
             src = self.current_source()
             tgt = self.current_target()
             if not src or not tgt:
-                messagebox.showwarning("Eksik seçim", "Kaynak ve hedef hesap seçilmeli.")
+                messagebox.showwarning(self.tr.t("mb_missing_t"), self.tr.t("mb_missing"))
                 return
             if src["id"] == tgt["id"]:
-                messagebox.showwarning("Aynı hesap", "Kaynak ve hedef aynı olamaz.")
+                messagebox.showwarning(self.tr.t("mb_same_t"), self.tr.t("mb_same"))
                 return
             sel = self.tree.selection()
             if not sel:
-                messagebox.showinfo("Sohbet seçin", "Taşımak için en az bir sohbet seçin.")
+                messagebox.showinfo(self.tr.t("mb_pick_t"), self.tr.t("mb_pick"))
                 return
             picked = [src["sessions"][int(i)] for i in sel]
-            if not messagebox.askyesno(
-                    "Onay",
-                    f"{len(picked)} sohbet\n  {src['id'][:8]}…  →  {tgt['id'][:8]}…\n"
-                    "hesabına taşınsın mı?\n\n"
-                    "(Claude uygulamasının KAPALI olduğundan emin olun.)"):
+            if not messagebox.askyesno(self.tr.t("mb_confirm_t"),
+                                       self.tr.t("mb_confirm", n=len(picked),
+                                                 src=src["id"][:8], tgt=tgt["id"][:8])):
                 return
 
             copied = skipped = overwritten = 0
             forced = None
             self.logln("")
-            self.logln(f"═══ TAŞIMA: {src['id'][:8]}… → {tgt['id'][:8]}… ═══")
+            self.logln(self.tr.t("g_move_log_hdr", src=src["id"][:8], tgt=tgt["id"][:8]))
             remaining_conf = sum(1 for s in picked if find_conflicts(tgt, s))
             for s in picked:
                 rel = target_rel_path(tgt, s)
@@ -641,32 +680,28 @@ def run_gui():
                         if apply_all:
                             forced = decision
                     if decision != "overwrite":
-                        self.logln(f"  • atlandı       : {s['title']}", "warn")
+                        self.logln(self.tr.t("g_move_skipped", title=s["title"]), "warn")
                         skipped += 1
                         continue
                     for e in mirror_remove(self.bases, [c["rel"] for c in conflicts]):
-                        self.logln("    [uyarı] " + e, "warn")
+                        self.logln("    [!] " + e, "warn")
                     written, werr = mirror_write(self.bases, s["path"], rel)
                     for e in werr:
-                        self.logln("    [uyarı] " + e, "warn")
-                    self.logln(f"  • üzerine yazıldı: {s['title']}  ({len(written)} depo)", "ok")
+                        self.logln("    [!] " + e, "warn")
+                    self.logln(self.tr.t("g_move_over", title=s["title"], n=len(written)), "ok")
                     overwritten += 1
                 else:
                     written, werr = mirror_write(self.bases, s["path"], rel)
                     for e in werr:
-                        self.logln("    [uyarı] " + e, "warn")
-                    self.logln(f"  • kopyalandı     : {s['title']}  ({len(written)} depo)", "ok")
+                        self.logln("    [!] " + e, "warn")
+                    self.logln(self.tr.t("g_move_copied", title=s["title"], n=len(written)), "ok")
                     copied += 1
 
-            self.logln(f"─── Bitti.  kopyalandı={copied}  üzerine yazıldı={overwritten}  atlandı={skipped}")
-            self.status(f"Tamamlandı: {copied} kopya, {overwritten} üzerine yazıldı, {skipped} atlandı")
+            self.logln(self.tr.t("g_move_done", c=copied, o=overwritten, s=skipped))
+            self.status(self.tr.t("g_move_status", c=copied, o=overwritten, s=skipped))
             self.reload()
-            messagebox.showinfo(
-                "Tamamlandı",
-                f"Kopyalandı       : {copied}\n"
-                f"Üzerine yazıldı  : {overwritten}\n"
-                f"Atlandı          : {skipped}\n\n"
-                "Şimdi Claude masaüstü uygulamasını yeniden açın.")
+            messagebox.showinfo(self.tr.t("mb_done_t"),
+                                self.tr.t("mb_done", c=copied, o=overwritten, s=skipped))
 
     App().mainloop()
 
@@ -675,9 +710,9 @@ def main():
     try:
         import tkinter  # noqa: F401
     except Exception as e:
-        print("tkinter bulunamadı. Gerçek Python ile çalıştırın (örn. py launcher):")
+        print("tkinter bulunamadı / not found. Run with real Python:")
         print("  py", str(Path(sys.argv[0]).resolve()))
-        print(f"(hata: {e})")
+        print(f"(hata/error: {e})")
         sys.exit(1)
     run_gui()
 

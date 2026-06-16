@@ -1,0 +1,7 @@
+{"type": "user", "message": {"content": "Özgeçmişimi gözden geçirip 3 madde halinde geri bildirim ver. / Review my resume and give feedback in 3 bullets."}}
+{"type": "assistant", "message": {"content": "Demo yanıt 1 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. Demo yanıt 1 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. Demo yanıt 1 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. "}}
+{"type": "user", "message": {"content": "Devam / continue 1"}}
+{"type": "assistant", "message": {"content": "Demo yanıt 2 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. Demo yanıt 2 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. Demo yanıt 2 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. "}}
+{"type": "user", "message": {"content": "Devam / continue 2"}}
+{"type": "assistant", "message": {"content": "Demo yanıt 3 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. Demo yanıt 3 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. Demo yanıt 3 — bu örnek (dummy) bir transkript satırıdır. Sample transcript line for screenshots. "}}
+{"type": "user", "message": {"content": "Devam / continue 3"}}

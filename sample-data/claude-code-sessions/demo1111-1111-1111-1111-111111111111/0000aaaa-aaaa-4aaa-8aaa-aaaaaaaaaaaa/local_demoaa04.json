@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_demoaa04",
+  "cliSessionId": "demo-cli-aa04",
+  "cwd": "C:\\Users\\demo\\Documents\\cv",
+  "originCwd": "C:\\Users\\demo\\Documents\\cv",
+  "title": "Resume feedback",
+  "titleSource": "auto",
+  "createdAt": 1781280000000,
+  "lastActivityAt": 1781287200000,
+  "lastFocusedAt": 1781287200000,
+  "model": "claude-opus-4-8",
+  "effort": "high",
+  "isArchived": false,
+  "permissionMode": "default",
+  "completedTurns": 6
+}

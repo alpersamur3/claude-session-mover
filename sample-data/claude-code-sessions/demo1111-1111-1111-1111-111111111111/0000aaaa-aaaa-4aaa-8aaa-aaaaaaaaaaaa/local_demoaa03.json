@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_demoaa03",
+  "cliSessionId": "demo-cli-aa03",
+  "cwd": "C:\\Users\\demo\\Desktop\\trip",
+  "originCwd": "C:\\Users\\demo\\Desktop\\trip",
+  "title": "Trip route planning",
+  "titleSource": "auto",
+  "createdAt": 1781452800000,
+  "lastActivityAt": 1781460000000,
+  "lastFocusedAt": 1781460000000,
+  "model": "claude-opus-4-8",
+  "effort": "high",
+  "isArchived": false,
+  "permissionMode": "default",
+  "completedTurns": 6
+}

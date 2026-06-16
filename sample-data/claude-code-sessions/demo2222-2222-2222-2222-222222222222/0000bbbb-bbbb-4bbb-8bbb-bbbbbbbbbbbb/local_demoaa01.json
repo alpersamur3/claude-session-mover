@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_demoaa01",
+  "cliSessionId": "demo-cli-bb01",
+  "cwd": "C:\\Users\\demo\\Desktop\\kitchen",
+  "originCwd": "C:\\Users\\demo\\Desktop\\kitchen",
+  "title": "Dinner recipe (old draft)",
+  "titleSource": "auto",
+  "createdAt": 1780848000000,
+  "lastActivityAt": 1780855200000,
+  "lastFocusedAt": 1780855200000,
+  "model": "claude-opus-4-8",
+  "effort": "high",
+  "isArchived": false,
+  "permissionMode": "default",
+  "completedTurns": 6
+}

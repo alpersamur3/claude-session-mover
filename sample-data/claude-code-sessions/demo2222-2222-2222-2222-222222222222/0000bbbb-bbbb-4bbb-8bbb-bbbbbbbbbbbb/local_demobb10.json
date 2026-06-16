@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_demobb10",
+  "cliSessionId": "demo-cli-bb10",
+  "cwd": "C:\\Users\\demo\\work\\deck",
+  "originCwd": "C:\\Users\\demo\\work\\deck",
+  "title": "Presentation outline",
+  "titleSource": "auto",
+  "createdAt": 1781553600000,
+  "lastActivityAt": 1781560800000,
+  "lastFocusedAt": 1781560800000,
+  "model": "claude-opus-4-8",
+  "effort": "high",
+  "isArchived": false,
+  "permissionMode": "default",
+  "completedTurns": 6
+}

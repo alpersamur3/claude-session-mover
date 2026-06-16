@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_demoaa02",
+  "cliSessionId": "demo-cli-aa02",
+  "cwd": "C:\\Users\\demo\\projects\\automation",
+  "originCwd": "C:\\Users\\demo\\projects\\automation",
+  "title": "Python automation script",
+  "titleSource": "auto",
+  "createdAt": 1781539200000,
+  "lastActivityAt": 1781546400000,
+  "lastFocusedAt": 1781546400000,
+  "model": "claude-opus-4-8",
+  "effort": "high",
+  "isArchived": false,
+  "permissionMode": "default",
+  "completedTurns": 6
+}

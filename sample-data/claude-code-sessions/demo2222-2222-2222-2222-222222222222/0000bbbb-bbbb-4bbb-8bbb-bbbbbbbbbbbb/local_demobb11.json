@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_demobb11",
+  "cliSessionId": "demo-cli-bb11",
+  "cwd": "C:\\Users\\demo\\work\\budget",
+  "originCwd": "C:\\Users\\demo\\work\\budget",
+  "title": "Budget analysis Q2",
+  "titleSource": "auto",
+  "createdAt": 1781366400000,
+  "lastActivityAt": 1781373600000,
+  "lastFocusedAt": 1781373600000,
+  "model": "claude-opus-4-8",
+  "effort": "high",
+  "isArchived": false,
+  "permissionMode": "default",
+  "completedTurns": 6
+}
