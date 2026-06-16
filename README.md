@@ -115,10 +115,15 @@ py csmui.py
 **Liste güncellenmedi** → Uygulama listeyi yalnızca açılışta okur; Claude'u kapatıp
 yeniden açın.
 
-<!-- Ekran görüntüleri: docs/ klasörüne ekleyip aşağıdaki satırları açın
-![Ana ekran](docs/main-tr.png)
-![Çakışma](docs/conflict-tr.png)
--->
+### Ekran görüntüleri
+
+Grafik arayüz (GUI):
+
+![GUI — Türkçe](docs/gui-tr.png)
+
+Terminal (CLI):
+
+![CLI — Türkçe](docs/cli-tr.png)
 
 ---
 
@@ -224,10 +229,15 @@ If `csm.py` finds no store it prints **diagnostics** (which Python, which paths)
 
 **List didn't update** → The app reads the list only at startup; close and reopen Claude.
 
-<!-- Screenshots: drop files into docs/ and uncomment
-![Main](docs/main-en.png)
-![Conflict](docs/conflict-en.png)
--->
+### Screenshots
+
+Graphical interface (GUI):
+
+![GUI — English](docs/gui-en.png)
+
+Terminal (CLI):
+
+![CLI — English](docs/cli-en.png)
 
 ---
 
