@@ -44,16 +44,28 @@ def candidate_bases() -> list:
         return [SCRIPT_DIR / "sample-data" / "claude-code-sessions"]
     if os.environ.get("CSM_BASE"):
         return [Path(p) for p in os.environ["CSM_BASE"].split(os.pathsep) if p]
-    appdata = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
-    local = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
-    cands = [
-        Path(appdata) / "Claude" / "claude-code-sessions",
-        Path.home() / "AppData" / "Roaming" / "Claude" / "claude-code-sessions",
-        Path(local) / "Claude" / "claude-code-sessions",
-    ]
-    for pkg in glob.glob(str(Path(local) / "Packages" / "Claude_*")):
-        cands.append(Path(pkg) / "LocalCache" / "Roaming" / "Claude" / "claude-code-sessions")
-        cands.append(Path(pkg) / "LocalCache" / "Local" / "Claude" / "claude-code-sessions")
+    home = Path.home()
+    cands = []
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA") or str(home / "AppData" / "Roaming")
+        local = os.environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")
+        cands += [
+            Path(appdata) / "Claude" / "claude-code-sessions",
+            home / "AppData" / "Roaming" / "Claude" / "claude-code-sessions",
+            Path(local) / "Claude" / "claude-code-sessions",
+        ]
+        for pkg in glob.glob(str(Path(local) / "Packages" / "Claude_*")):
+            cands.append(Path(pkg) / "LocalCache" / "Roaming" / "Claude" / "claude-code-sessions")
+            cands.append(Path(pkg) / "LocalCache" / "Local" / "Claude" / "claude-code-sessions")
+    elif sys.platform == "darwin":  # macOS (deneysel / experimental)
+        cands.append(home / "Library" / "Application Support" / "Claude" / "claude-code-sessions")
+    else:  # Linux/diğer (deneysel / experimental)
+        xdg = os.environ.get("XDG_CONFIG_HOME")
+        cfg = Path(xdg) if xdg else (home / ".config")
+        cands += [
+            cfg / "Claude" / "claude-code-sessions",
+            home / ".config" / "Claude" / "claude-code-sessions",
+        ]
     return cands
 
 

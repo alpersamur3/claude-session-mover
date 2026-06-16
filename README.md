@@ -45,6 +45,17 @@ Kayıt dosyasının iki kilit alanı:
 - GUI için **tkinter** (python.org kurulumlarında hazır gelir).
 - Ek bağımlılık yok (yalnızca standart kütüphane).
 
+### Platform desteği
+- **Windows:** tam test edildi / birincil hedef.
+- **macOS / Linux:** *deneysel*. Veri klasörü otomatik denenir
+  (`~/Library/Application Support/Claude/…` ve `~/.config/Claude/…`). Bulunamazsa
+  yolu kendin ver: `CSM_BASE=/yol/claude-code-sessions` (ve gerekiyorsa
+  `CSM_PROJECTS=/yol/.claude/projects`).
+- macOS/Linux'ta `py` yerine `python3` kullan: `python3 csmui.py`.
+- `--demo` her platformda çalışır (gerçek veriye dokunmadan denemek için).
+- Hata bulursan lütfen [Issues](https://github.com/alpersamur3/claude-session-mover/issues)
+  üzerinden bildir (OS + `csm.py` tanı çıktısıyla).
+
 ### Kullanım
 Windows'ta **`py` launcher** en güvenlisidir (gerçek Python'a gider):
 
@@ -157,6 +168,17 @@ Two key fields of the record:
 - **Python 3.8+** (a real install; Microsoft Store/sandbox Python **not recommended**).
 - **tkinter** for the GUI (bundled with python.org installers).
 - No extra dependencies (standard library only).
+
+### Platform support
+- **Windows:** fully tested / primary target.
+- **macOS / Linux:** *experimental*. The data folder is auto-detected
+  (`~/Library/Application Support/Claude/…` and `~/.config/Claude/…`). If not found,
+  point it manually: `CSM_BASE=/path/claude-code-sessions` (and
+  `CSM_PROJECTS=/path/.claude/projects` if transcripts live elsewhere).
+- On macOS/Linux use `python3` instead of `py`: `python3 csmui.py`.
+- `--demo` works on every platform (to try it without touching real data).
+- Found a bug? Please report via [Issues](https://github.com/alpersamur3/claude-session-mover/issues)
+  (include your OS and the `csm.py` diagnostics output).
 
 ### Usage
 On Windows the **`py` launcher** is safest (uses a real Python):
