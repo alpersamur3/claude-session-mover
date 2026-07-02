@@ -1,0 +1,8 @@
+{
+  "oauthAccount": {
+    "accountUuid": "demo1111-1111-1111-1111-111111111111",
+    "emailAddress": "demo-a@example.com",
+    "organizationUuid": "0000aaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "displayName": "demo"
+  }
+}

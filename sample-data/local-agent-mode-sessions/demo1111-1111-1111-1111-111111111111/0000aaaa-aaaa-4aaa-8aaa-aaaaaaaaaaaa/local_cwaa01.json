@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_cwaa01",
+  "processName": "demo-cwaa01",
+  "cliSessionId": "demo-cli-cwaa01",
+  "cwd": "C:\\demo\\demo1111-1111-1111-1111-111111111111\\0000aaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\\local_cwaa01\\outputs",
+  "userSelectedFolders": [
+    "C:\\Users\\demo\\projeler\\cwaa01"
+  ],
+  "createdAt": 1782899500000,
+  "lastActivityAt": 1782900000000,
+  "model": "claude-fable-5",
+  "permissionMode": "bypassPermissions",
+  "isArchived": false,
+  "title": "Restoran modül paketleme",
+  "initialMessage": "restoran sistemindeki özellikleri modüler paketlere ayır, paket oluşturma ekle."
+}

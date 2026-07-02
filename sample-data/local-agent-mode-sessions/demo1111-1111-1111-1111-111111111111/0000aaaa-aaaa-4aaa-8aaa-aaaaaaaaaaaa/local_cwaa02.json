@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_cwaa02",
+  "processName": "demo-cwaa02",
+  "cliSessionId": "demo-cli-cwaa02",
+  "cwd": "C:\\demo\\demo1111-1111-1111-1111-111111111111\\0000aaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\\local_cwaa02\\outputs",
+  "userSelectedFolders": [
+    "C:\\Users\\demo\\projeler\\cwaa02"
+  ],
+  "createdAt": 1782799500000,
+  "lastActivityAt": 1782800000000,
+  "model": "claude-fable-5",
+  "permissionMode": "bypassPermissions",
+  "isArchived": false,
+  "title": "Landing page revizyonu",
+  "initialMessage": "landing page'de fiyatlar yerine özellikler ve modüller gösterilsin."
+}

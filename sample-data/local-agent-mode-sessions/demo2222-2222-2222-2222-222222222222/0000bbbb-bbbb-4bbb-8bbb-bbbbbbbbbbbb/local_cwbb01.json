@@ -1,0 +1,16 @@
+{
+  "sessionId": "local_cwbb01",
+  "processName": "demo-cwbb01",
+  "cliSessionId": "demo-cli-cwbb01",
+  "cwd": "C:\\demo\\demo2222-2222-2222-2222-222222222222\\0000bbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb\\local_cwbb01\\outputs",
+  "userSelectedFolders": [
+    "C:\\Users\\demo\\projeler\\cwbb01"
+  ],
+  "createdAt": 1782849500000,
+  "lastActivityAt": 1782850000000,
+  "model": "claude-fable-5",
+  "permissionMode": "bypassPermissions",
+  "isArchived": false,
+  "title": "Rapor otomasyonu",
+  "initialMessage": "haftalık raporu xlsx olarak üret ve e-posta ile gönder."
+}

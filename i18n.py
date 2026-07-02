@@ -24,6 +24,18 @@ T = {
     "invalid":          {"tr": "Geçersiz seçim.", "en": "Invalid selection."},
     "cancelled":        {"tr": "İptal edildi.", "en": "Cancelled."},
 
+    # --- session tipi / session type ---
+    "type_code":        {"tr": "Claude Code", "en": "Claude Code"},
+    "type_cowork":      {"tr": "Cowork", "en": "Cowork"},
+    "choose_type":      {"tr": "=== TAŞINACAK SESSION TİPİNİ SEÇ ===",
+                          "en": "=== SELECT SESSION TYPE TO MOVE ==="},
+    "type_opt_code":    {"tr": "  [1] Claude Code — masaüstü sohbetleri",
+                          "en": "  [1] Claude Code — desktop chats"},
+    "type_opt_cowork":  {"tr": "  [2] Cowork — agent oturumları",
+                          "en": "  [2] Cowork — agent sessions"},
+    "prompt_type":      {"tr": "Tip no (1/2): ", "en": "Type no (1/2): "},
+    "type_active":      {"tr": "Seçilen tip: {name}", "en": "Selected type: {name}"},
+
     # --- depo / store ---
     "no_store":         {"tr": "Hiçbir session deposu bulunamadı.",
                           "en": "No session store found."},
@@ -38,17 +50,19 @@ T = {
 
     # --- hesap seçimi / account selection ---
     "choose_account":   {"tr": "=== {role} HESABI SEÇ ===", "en": "=== SELECT {role} ACCOUNT ==="},
-    "account_line":     {"tr": "  [{i}] hesap {id}...  ({n} sohbet, son: {t})",
-                          "en": "  [{i}] account {id}...  ({n} chats, last: {t})"},
+    "account_line":     {"tr": "  [{i}] {id}  ({n} sohbet, son: {t})",
+                          "en": "  [{i}] {id}  ({n} chats, last: {t})"},
     "account_samples":  {"tr": "       örnek: {s}", "en": "       examples: {s}"},
     "no_account":       {"tr": "Uygun hesap yok.", "en": "No eligible account."},
-    "auto_single":      {"tr": "(Tek uygun hesap: otomatik seçildi -> {id}...)",
-                          "en": "(Only one eligible account: auto-selected -> {id}...)"},
+    "no_src_accounts":  {"tr": "Bu tipte, sohbeti olan hesap yok.",
+                          "en": "No account with chats for this type."},
+    "auto_single":      {"tr": "(Tek uygun hesap otomatik seçildi -> {id})",
+                          "en": "(Only one eligible account, auto-selected -> {id})"},
     "prompt_account":   {"tr": "{role} hesap no: ", "en": "{role} account no: "},
 
     # --- sohbet listesi / session list ---
-    "src_sessions":     {"tr": "=== KAYNAK HESAPTAKİ SOHBETLER (hesap {id}...) ===",
-                          "en": "=== CHATS IN SOURCE ACCOUNT (account {id}...) ==="},
+    "src_sessions":     {"tr": "=== KAYNAK HESAPTAKİ SOHBETLER ({id}) ===",
+                          "en": "=== CHATS IN SOURCE ACCOUNT ({id}) ==="},
     "no_sessions":      {"tr": "Bu hesapta sohbet yok.", "en": "No chats in this account."},
     "notr_flag":        {"tr": "  [!] transkript bulunamadı", "en": "  [!] transcript not found"},
     "folder_line":      {"tr": "       klasör: {cwd}   son: {t}", "en": "       folder: {cwd}   last: {t}"},
@@ -60,8 +74,8 @@ T = {
 
     # --- özet / summary ---
     "summary":          {"tr": "=== ÖZET ===", "en": "=== SUMMARY ==="},
-    "src_acc":          {"tr": "Kaynak hesap : {id}...", "en": "Source account : {id}..."},
-    "tgt_acc":          {"tr": "Hedef hesap  : {id}...", "en": "Target account : {id}..."},
+    "src_acc":          {"tr": "Kaynak hesap : {id}", "en": "Source account : {id}"},
+    "tgt_acc":          {"tr": "Hedef hesap  : {id}", "en": "Target account : {id}"},
     "proceed_q":        {"tr": "Devam edilsin mi? (e/h): ", "en": "Proceed? (y/n): "},
 
     # --- çakışma / conflict ---
@@ -104,6 +118,7 @@ T = {
     "g_lang":           {"tr": "Dil:", "en": "Lang:"},
     "g_source":         {"tr": "Kaynak hesap:", "en": "Source account:"},
     "g_target":         {"tr": "Hedef hesap:", "en": "Target account:"},
+    "g_target_ph":      {"tr": "— Hedef hesap seçin —", "en": "— Select target account —"},
     "g_filter":         {"tr": "🔍 Filtre:", "en": "🔍 Filter:"},
     "g_col_title":      {"tr": "Başlık", "en": "Title"},
     "g_col_folder":     {"tr": "Klasör", "en": "Folder"},
@@ -120,8 +135,8 @@ T = {
                                "(sistem tepsisinden de çıkın). İşlem bitince yeniden açıp 🔄 Yenile deyin.",
                           "en": "  ⚠  Fully close the Claude desktop app before moving "
                                "(quit from the system tray too). When done, reopen it and click 🔄 Refresh."},
-    "g_acc_label":      {"tr": "{id}…   •   {n} sohbet   •   son {t}",
-                          "en": "{id}…   •   {n} chats   •   last {t}"},
+    "g_acc_label":      {"tr": "{id}   •   {n} sohbet   •   son {t}",
+                          "en": "{id}   •   {n} chats   •   last {t}"},
     "g_count":          {"tr": "{shown}/{total} sohbet", "en": "{shown}/{total} chats"},
     "g_selected":       {"tr": "Seçili: {title}", "en": "Selected: {title}"},
     "g_ready":          {"tr": "Hazır.", "en": "Ready."},
@@ -165,21 +180,23 @@ T = {
                           "en": "Source and target accounts must be selected."},
     "mb_same_t":        {"tr": "Aynı hesap", "en": "Same account"},
     "mb_same":          {"tr": "Kaynak ve hedef aynı olamaz.", "en": "Source and target cannot be the same."},
+    "mb_no_target_t":   {"tr": "Hedef seçilmedi", "en": "No target selected"},
+    "mb_no_target":     {"tr": "Lütfen bir hedef hesap seçin.", "en": "Please select a target account."},
     "mb_pick_t":        {"tr": "Sohbet seçin", "en": "Select a chat"},
     "mb_pick":          {"tr": "Taşımak için en az bir sohbet seçin.",
                           "en": "Select at least one chat to move."},
     "mb_confirm_t":     {"tr": "Onay", "en": "Confirm"},
-    "mb_confirm":       {"tr": "{n} sohbet\n  {src}…  →  {tgt}…\nhesabına taşınsın mı?\n\n"
+    "mb_confirm":       {"tr": "{n} sohbet\n  {src}  →  {tgt}\nhesabına taşınsın mı?\n\n"
                                "(Claude uygulamasının KAPALI olduğundan emin olun.)",
-                          "en": "Move {n} chat(s)\n  {src}…  →  {tgt}…\nto this account?\n\n"
+                          "en": "Move {n} chat(s)\n  {src}  →  {tgt}\nto this account?\n\n"
                                "(Make sure the Claude app is CLOSED.)"},
     "mb_done_t":        {"tr": "Tamamlandı", "en": "Completed"},
     "mb_done":          {"tr": "Kopyalandı       : {c}\nÜzerine yazıldı  : {o}\nAtlandı          : {s}\n\n"
                                "Şimdi Claude masaüstü uygulamasını yeniden açın.",
                           "en": "Copied       : {c}\nOverwritten  : {o}\nSkipped      : {s}\n\n"
                                "Now reopen the Claude desktop app."},
-    "g_move_log_hdr":   {"tr": "═══ TAŞIMA: {src}… → {tgt}… ═══",
-                          "en": "═══ MOVE: {src}… → {tgt}… ═══"},
+    "g_move_log_hdr":   {"tr": "═══ TAŞIMA: {src} → {tgt} ═══",
+                          "en": "═══ MOVE: {src} → {tgt} ═══"},
     "g_move_skipped":   {"tr": "  • atlandı       : {title}", "en": "  • skipped     : {title}"},
     "g_move_over":      {"tr": "  • üzerine yazıldı: {title}  ({n} depo)",
                           "en": "  • overwritten : {title}  ({n} stores)"},

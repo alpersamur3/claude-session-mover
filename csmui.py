@@ -3,8 +3,14 @@
 """
 Claude Sohbet Taşıyıcı — Tkinter Arayüzü (csmui.py)  /  Claude Chat Mover — GUI
 ==============================================================================
-csm.py'nin grafik arayüzlü, daha ayrıntılı sürümü. Sağ üstten TR/EN dil seçimi.
-Ayrıntı için README.md.
+csm.py'nin grafik arayüzlü sürümü. İki sekme:
+
+  • Claude Code  → masaüstü sohbetleri
+  • Cowork       → agent oturumları (kayıt + yan klasörleriyle birlikte)
+
+Kaynak/hedef hesaplar e-posta ile gösterilir (çözülemezse kısa UUID), son
+aktiviteye göre sıralanır; hedef bilinçli seçilir (otomatik seçilmez).
+Sağ üstten TR/EN dil seçimi. Ayrıntı için README.md.
 
 Çalıştırma / Run:
     py csmui.py               (Türkçe)
@@ -14,236 +20,17 @@ Ayrıntı için README.md.
 ÖNEMLİ: Çalıştırmadan önce Claude masaüstü uygulamasını TAMAMEN kapatın.
 """
 
-import os
 import sys
-import glob
-import json
-import shutil
 from pathlib import Path
-from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from i18n import Translator, detect_lang  # noqa: E402
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-IS_DEMO = "--demo" in sys.argv[1:]
-
-# ----------------------------------------------------------------------------
-# ÇEKİRDEK MANTIK / CORE
-# ----------------------------------------------------------------------------
-
-def projects_dir() -> Path:
-    if IS_DEMO:
-        return SCRIPT_DIR / "sample-data" / "projects"
-    env = os.environ.get("CSM_PROJECTS")
-    return Path(env) if env else (Path.home() / ".claude" / "projects")
-
-
-def candidate_bases() -> list:
-    if IS_DEMO:
-        return [SCRIPT_DIR / "sample-data" / "claude-code-sessions"]
-    if os.environ.get("CSM_BASE"):
-        return [Path(p) for p in os.environ["CSM_BASE"].split(os.pathsep) if p]
-    home = Path.home()
-    cands = []
-    if sys.platform == "win32":
-        appdata = os.environ.get("APPDATA") or str(home / "AppData" / "Roaming")
-        local = os.environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")
-        cands += [
-            Path(appdata) / "Claude" / "claude-code-sessions",
-            home / "AppData" / "Roaming" / "Claude" / "claude-code-sessions",
-            Path(local) / "Claude" / "claude-code-sessions",
-        ]
-        for pkg in glob.glob(str(Path(local) / "Packages" / "Claude_*")):
-            cands.append(Path(pkg) / "LocalCache" / "Roaming" / "Claude" / "claude-code-sessions")
-            cands.append(Path(pkg) / "LocalCache" / "Local" / "Claude" / "claude-code-sessions")
-    elif sys.platform == "darwin":  # macOS (deneysel / experimental)
-        cands.append(home / "Library" / "Application Support" / "Claude" / "claude-code-sessions")
-    else:  # Linux/diğer (deneysel / experimental)
-        xdg = os.environ.get("XDG_CONFIG_HOME")
-        cfg = Path(xdg) if xdg else (home / ".config")
-        cands += [
-            cfg / "Claude" / "claude-code-sessions",
-            home / ".config" / "Claude" / "claude-code-sessions",
-        ]
-    return cands
-
-
-def existing_bases() -> list:
-    seen = {}
-    for c in candidate_bases():
-        try:
-            if not c.exists() or not c.is_dir():
-                continue
-            real = Path(os.path.realpath(str(c)))
-            key = os.path.normcase(str(real))
-            if key in seen:
-                continue
-            mt = 0
-            for f in real.rglob("local_*.json"):
-                try:
-                    mt = max(mt, f.stat().st_mtime)
-                except Exception:
-                    pass
-            seen[key] = (real, mt)
-        except Exception:
-            continue
-    return [v[0] for v in sorted(seen.values(), key=lambda x: x[1], reverse=True)]
-
-
-def build_transcript_index() -> dict:
-    index = {}
-    pdir = projects_dir()
-    if pdir.exists():
-        for p in pdir.rglob("*.jsonl"):
-            index.setdefault(p.stem, p)
-    return index
-
-
-def human_size(n) -> str:
-    if n is None:
-        return "—"
-    try:
-        n = float(n)
-    except Exception:
-        return "?"
-    for unit in ("B", "KB", "MB", "GB"):
-        if n < 1024 or unit == "GB":
-            return f"{int(n)} {unit}" if unit == "B" else f"{n:.1f} {unit}"
-        n /= 1024.0
-    return f"{n:.1f} GB"
-
-
-def file_size(path):
-    try:
-        return path.stat().st_size if path else None
-    except Exception:
-        return None
-
-
-def first_user_message(transcript_path, limit: int = 1500) -> str:
-    if not transcript_path:
-        return ""
-    try:
-        with open(transcript_path, "r", encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    o = json.loads(line)
-                except Exception:
-                    continue
-                if o.get("type") == "user":
-                    content = o.get("message", {}).get("content")
-                    if isinstance(content, str):
-                        t = " ".join(content.split()).strip()
-                        if t and not t.startswith("[Request interrupted"):
-                            return t[:limit] + ("…" if len(t) > limit else "")
-    except Exception:
-        pass
-    return ""
-
-
-def load_entry(path):
-    try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
-            return json.load(f)
-    except Exception:
-        return None
-
-
-def fmt_time(ms) -> str:
-    try:
-        return datetime.fromtimestamp(ms / 1000).strftime("%Y-%m-%d %H:%M")
-    except Exception:
-        return "?"
-
-
-def make_session(entry_path, entry, tindex, base) -> dict:
-    cli = entry.get("cliSessionId", "")
-    transcript = tindex.get(cli)
-    try:
-        rel = entry_path.relative_to(base)
-    except Exception:
-        rel = Path(entry_path.parent.parent.name) / entry_path.parent.name / entry_path.name
-    return {
-        "path": entry_path, "rel": rel, "entry": entry,
-        "title": entry.get("title") or "(…)",
-        "cwd": entry.get("cwd", "?"), "cli": cli,
-        "sid": entry.get("sessionId", entry_path.stem),
-        "last": entry.get("lastActivityAt", 0), "transcript": transcript,
-        "rec_size": file_size(entry_path), "tr_size": file_size(transcript),
-    }
-
-
-def load_accounts(base, tindex) -> list:
-    accounts = []
-    for acc_dir in sorted([d for d in base.iterdir() if d.is_dir()]):
-        sessions = []
-        for entry_path in acc_dir.rglob("local_*.json"):
-            entry = load_entry(entry_path)
-            if not entry:
-                continue
-            sessions.append(make_session(entry_path, entry, tindex, base))
-        sessions.sort(key=lambda s: s["last"], reverse=True)
-        accounts.append({"id": acc_dir.name, "dir": acc_dir, "sessions": sessions})
-    return accounts
-
-
-def target_rel_path(target, source_session) -> Path:
-    acc_id = target["id"]
-    fname = source_session["path"].name
-    src_cwd = source_session.get("cwd")
-    ws_name = None
-    for t in target["sessions"]:
-        if src_cwd and t["cwd"] == src_cwd:
-            ws_name = t["rel"].parts[1] if len(t["rel"].parts) >= 2 else t["path"].parent.name
-            break
-    if ws_name is None and target["sessions"]:
-        newest = max(target["sessions"], key=lambda s: s["last"])
-        ws_name = newest["rel"].parts[1] if len(newest["rel"].parts) >= 2 else newest["path"].parent.name
-    if ws_name is None:
-        ws_name = source_session["path"].parent.name
-    return Path(acc_id) / ws_name / fname
-
-
-def find_conflicts(target, source_session) -> list:
-    conflicts, seen = [], set()
-    s_cli, s_sid = source_session.get("cli"), source_session.get("sid")
-    for t in target["sessions"]:
-        if (s_cli and t["cli"] == s_cli) or (s_sid and t["sid"] == s_sid):
-            if t["rel"] not in seen:
-                conflicts.append(t)
-                seen.add(t["rel"])
-    return conflicts
-
-
-def mirror_remove(bases, rels):
-    errs = []
-    for base in bases:
-        for rel in rels:
-            p = base / rel
-            try:
-                if p.exists():
-                    p.unlink()
-            except Exception as e:
-                errs.append(f"{p} ({e})")
-    return errs
-
-
-def mirror_write(bases, src_file, rel):
-    written, errs = [], []
-    for base in bases:
-        dst = base / rel
-        try:
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src_file, dst)
-            written.append(dst)
-        except Exception as e:
-            errs.append(f"{dst} ({e})")
-    return written, errs
-
+import csm  # çekirdek mantık: depo bulma, hesap yükleme, kopyalama  # noqa: E402
+from csm import (  # noqa: E402
+    existing_bases, build_transcript_index, build_email_index, load_accounts,
+    candidate_bases, human_size, fmt_time, session_preview, account_who,
+    target_rel_path, find_conflicts, perform_copy, perform_remove, STORE_NAMES,
+)
 
 # ----------------------------------------------------------------------------
 # ARAYÜZ / GUI
@@ -257,6 +44,8 @@ CLR_OK = "#15803d"
 CLR_MUTED = "#6b7280"
 CLR_STRIPE = "#eef2f7"
 CLR_DANGER = "#b91c1c"
+
+SESSION_KINDS = ("code", "cowork")
 
 
 def run_gui():
@@ -340,94 +129,41 @@ def run_gui():
             self.result = ("skip", self.apply_all.get())
             self.destroy()
 
-    class App(tk.Tk):
+    class SessionPane(ttk.Frame):
+        """Tek bir oturum tipi (code / cowork) için tam kaynak→hedef paneli."""
+
         HEADINGS = (("title", "g_col_title"), ("cwd", "g_col_folder"),
                     ("last", "g_col_last"), ("tr", "g_col_chat"), ("rec", "g_col_record"))
 
-        def __init__(self):
-            super().__init__()
-            self.tr = tr
-            self.geometry("1180x760")
-            self.minsize(1000, 620)
-            self.configure(bg=CLR_BG)
+        def __init__(self, master, app, kind):
+            super().__init__(master, padding=(10, 8))
+            self.app = app
+            self.tr = app.tr
+            self.kind = kind
             self.bases = []
-            self.tindex = {}
-            self.accounts = []
+            self.accounts = []       # tüm hesaplar (son aktiviteye göre sıralı)
+            self.src_accounts = []   # yalnızca sohbeti olan hesaplar (kaynak)
             self.target_accounts = []
-            self._init_style()
             self._build()
-            self.retranslate(initial=True)
-            self.reload()
-
-        # ---- stil ----
-        def _init_style(self):
-            st = ttk.Style(self)
-            try:
-                st.theme_use("clam")
-            except Exception:
-                pass
-            st.configure(".", background=CLR_BG)
-            st.configure("TFrame", background=CLR_BG)
-            st.configure("Card.TFrame", background="white")
-            st.configure("TLabel", background=CLR_BG, font=("Segoe UI", 9))
-            st.configure("TLabelframe", background=CLR_BG)
-            st.configure("TLabelframe.Label", background=CLR_BG,
-                         font=("Segoe UI", 9, "bold"), foreground="#374151")
-            st.configure("Muted.TLabel", foreground=CLR_MUTED)
-            st.configure("Store.TLabel", foreground=CLR_MUTED, font=("Consolas", 8))
-            st.configure("DlgTitle.TLabel", background="white",
-                         font=("Segoe UI", 11, "bold"), foreground=CLR_DANGER)
-            st.configure("DlgSub.TLabel", background="white",
-                         font=("Segoe UI", 10), foreground=CLR_ACCENT)
-            st.configure("Bold.TLabel", font=("Segoe UI", 9, "bold"))
-            st.configure("TButton", font=("Segoe UI", 9), padding=4)
-            st.configure("Accent.TButton", font=("Segoe UI", 10, "bold"),
-                         foreground="white", background=CLR_ACCENT, padding=6)
-            st.map("Accent.TButton",
-                   background=[("active", CLR_ACCENT_HOVER), ("disabled", "#9ca3af")])
-            st.configure("Treeview", rowheight=27, font=("Segoe UI", 9),
-                         fieldbackground="white", background="white")
-            st.configure("Treeview.Heading", font=("Segoe UI", 9, "bold"))
 
         # ---- arayüz ----
         def _build(self):
-            # banner
-            banner = tk.Frame(self, bg=CLR_BANNER)
-            banner.pack(fill="x")
-            self.banner_lbl = tk.Label(banner, bg=CLR_BANNER, fg="white", anchor="w",
-                                       font=("Segoe UI", 9, "bold"))
-            self.banner_lbl.pack(fill="x", pady=4)
-
-            # toolbar
-            top = ttk.Frame(self, padding=(12, 8))
-            top.pack(fill="x")
-            self.lbl_store = ttk.Label(top, style="Bold.TLabel")
-            self.lbl_store.pack(side="left")
             self.stores_var = tk.StringVar(value="…")
-            ttk.Label(top, textvariable=self.stores_var, style="Store.TLabel").pack(side="left", padx=(6, 0))
+            ttk.Label(self, textvariable=self.stores_var, style="Store.TLabel")\
+                .pack(fill="x", pady=(0, 6))
 
-            self.btn_refresh = ttk.Button(top, command=self.reload)
-            self.btn_refresh.pack(side="right")
-            self.lang_combo = ttk.Combobox(top, state="readonly", width=10,
-                                           values=["Türkçe", "English"])
-            self.lang_combo.current(1 if self.tr.lang == "en" else 0)
-            self.lang_combo.pack(side="right", padx=8)
-            self.lang_combo.bind("<<ComboboxSelected>>", lambda e: self.on_lang_change())
-            self.lbl_lang = ttk.Label(top, style="Bold.TLabel")
-            self.lbl_lang.pack(side="right")
-
-            # orta
             paned = ttk.Panedwindow(self, orient="horizontal")
-            paned.pack(fill="both", expand=True, padx=12, pady=(0, 6))
+            paned.pack(fill="both", expand=True)
 
             left = ttk.Frame(paned, padding=(0, 0, 6, 0))
             paned.add(left, weight=3)
+
             srow = ttk.Frame(left)
             srow.pack(fill="x", pady=(0, 6))
             self.lbl_source = ttk.Label(srow, style="Bold.TLabel")
             self.lbl_source.pack(side="left")
-            self.source_combo = ttk.Combobox(srow, state="readonly", width=46)
-            self.source_combo.pack(side="left", padx=6)
+            self.source_combo = ttk.Combobox(srow, state="readonly", width=44)
+            self.source_combo.pack(side="left", padx=6, fill="x", expand=True)
             self.source_combo.bind("<<ComboboxSelected>>", lambda e: self.on_source_change())
 
             frow = ttk.Frame(left)
@@ -466,24 +202,24 @@ def run_gui():
             ttk.Separator(self.preview_frame).pack(fill="x", pady=8)
             self.lbl_firstmsg = ttk.Label(self.preview_frame, style="Muted.TLabel")
             self.lbl_firstmsg.pack(anchor="w")
-            self.preview = scrolledtext.ScrolledText(self.preview_frame, height=14, wrap="word",
+            self.preview = scrolledtext.ScrolledText(self.preview_frame, height=12, wrap="word",
                                                      font=("Segoe UI", 9), relief="flat",
                                                      background="white")
             self.preview.pack(fill="both", expand=True, pady=(4, 0))
             self.preview.configure(state="disabled")
 
-            trow = ttk.Frame(self, padding=(12, 4))
+            trow = ttk.Frame(self, padding=(0, 6))
             trow.pack(fill="x")
             self.lbl_target = ttk.Label(trow, style="Bold.TLabel")
             self.lbl_target.pack(side="left")
-            self.target_combo = ttk.Combobox(trow, state="readonly", width=46)
+            self.target_combo = ttk.Combobox(trow, state="readonly", width=44)
             self.target_combo.pack(side="left", padx=6)
             self.move_btn = ttk.Button(trow, style="Accent.TButton", command=self.on_move)
             self.move_btn.pack(side="left", padx=12)
 
             self.log_frame = ttk.Labelframe(self, padding=6)
-            self.log_frame.pack(fill="both", expand=False, padx=12, pady=(4, 4))
-            self.log = scrolledtext.ScrolledText(self.log_frame, height=8, wrap="word",
+            self.log_frame.pack(fill="both", expand=False, pady=(4, 0))
+            self.log = scrolledtext.ScrolledText(self.log_frame, height=6, wrap="word",
                                                  font=("Consolas", 9), relief="flat")
             self.log.pack(fill="both", expand=True)
             self.log.tag_config("ok", foreground=CLR_OK)
@@ -491,23 +227,12 @@ def run_gui():
             self.log.tag_config("err", foreground=CLR_DANGER)
             self.log.configure(state="disabled")
 
-            self.status_var = tk.StringVar(value="")
-            status = tk.Frame(self, bg="#e5e7eb")
-            status.pack(fill="x", side="bottom")
-            tk.Label(status, textvariable=self.status_var, bg="#e5e7eb", anchor="w",
-                     font=("Segoe UI", 8), fg="#374151").pack(fill="x", padx=8, pady=2)
-
         # ---- i18n ----
         def acc_label(self, acc):
-            last = max((s["last"] for s in acc["sessions"]), default=0)
-            return self.tr.t("g_acc_label", id=acc["id"][:8], n=len(acc["sessions"]), t=fmt_time(last))
+            return self.tr.t("g_acc_label", id=account_who(acc),
+                             n=len(acc["sessions"]), t=fmt_time(acc["last"]))
 
-        def retranslate(self, initial=False):
-            self.title(self.tr.t("app_title"))
-            self.banner_lbl.config(text=self.tr.t("g_banner"))
-            self.lbl_store.config(text=self.tr.t("g_store"))
-            self.btn_refresh.config(text=self.tr.t("g_refresh"))
-            self.lbl_lang.config(text=self.tr.t("g_lang"))
+        def retranslate(self):
             self.lbl_source.config(text=self.tr.t("g_source"))
             self.lbl_filter.config(text=self.tr.t("g_filter"))
             self.preview_frame.config(text=self.tr.t("g_preview"))
@@ -517,17 +242,10 @@ def run_gui():
             self.log_frame.config(text=self.tr.t("g_log"))
             for col, key in self.HEADINGS:
                 self.tree.heading(col, text=self.tr.t(key))
-            if not initial:
-                self._refresh_account_combos()
-                self.populate_sessions()
-                self.status(self.tr.t("g_ready"))
-            else:
-                self.detail_var.set(self.tr.t("g_pick_hint"))
-                self.status_var.set(self.tr.t("g_ready"))
-
-        def on_lang_change(self):
-            self.tr.set_lang("en" if self.lang_combo.current() == 1 else "tr")
-            self.retranslate()
+            # combo etiketlerini yeni dile göre tazele
+            self._refresh_source_values(keep_selection=True)
+            self.refresh_target()
+            self.populate_sessions()
 
         # ---- yardımcılar ----
         def logln(self, msg, tag=None):
@@ -535,9 +253,6 @@ def run_gui():
             self.log.insert("end", msg + "\n", (tag,) if tag else ())
             self.log.see("end")
             self.log.configure(state="disabled")
-
-        def status(self, msg):
-            self.status_var.set(msg)
 
         def set_preview(self, text):
             self.preview.configure(state="normal")
@@ -547,69 +262,63 @@ def run_gui():
 
         def current_source(self):
             i = self.source_combo.current()
-            return self.accounts[i] if 0 <= i < len(self.accounts) else None
+            return self.src_accounts[i] if 0 <= i < len(self.src_accounts) else None
 
         def current_target(self):
+            # 0. eleman placeholder; gerçek hesaplar 1'den başlar.
             i = self.target_combo.current()
-            return self.target_accounts[i] if 0 <= i < len(self.target_accounts) else None
+            if i <= 0:
+                return None
+            j = i - 1
+            return self.target_accounts[j] if 0 <= j < len(self.target_accounts) else None
 
-        def _refresh_account_combos(self):
-            prev_src = self.current_source()
-            self.source_combo["values"] = [self.acc_label(a) for a in self.accounts]
-            if self.accounts:
-                idx = 0
-                if prev_src:
-                    for j, a in enumerate(self.accounts):
-                        if a["id"] == prev_src["id"]:
-                            idx = j
-                            break
-                self.source_combo.current(idx)
-            self.refresh_target()
+        def _refresh_source_values(self, keep_selection=False):
+            prev = self.current_source() if keep_selection else None
+            self.src_accounts = [a for a in self.accounts if a["sessions"]]
+            self.source_combo["values"] = [self.acc_label(a) for a in self.src_accounts]
+            if not self.src_accounts:
+                self.source_combo.set("")
+                return
+            idx = 0
+            if prev:
+                for j, a in enumerate(self.src_accounts):
+                    if a["id"] == prev["id"]:
+                        idx = j
+                        break
+            self.source_combo.current(idx)
 
         # ---- eylemler ----
-        def reload(self):
-            self.bases = existing_bases()
+        def reload(self, email_map, tindex):
+            self.bases = existing_bases(self.kind)
             if not self.bases:
                 self.stores_var.set(self.tr.t("g_no_store_short"))
-                self.status(self.tr.t("g_no_store_status"))
                 self.logln("[!] " + self.tr.t("no_store"), "err")
-                self.logln(f"    python: {sys.executable}")
-                for c in candidate_bases():
+                for c in candidate_bases(self.kind):
                     self.logln(f"    [{'OK' if c.exists() else '--'}] {c}")
-                self.accounts, self.target_accounts = [], []
+                self.accounts, self.src_accounts, self.target_accounts = [], [], []
                 self.source_combo["values"] = []
                 self.target_combo["values"] = []
                 self.move_btn.state(["disabled"])
                 return
             self.stores_var.set("   |   ".join(str(b) for b in self.bases))
-            self.tindex = build_transcript_index()
-            self.accounts = load_accounts(self.bases[0], self.tindex)
-            self.source_combo["values"] = [self.acc_label(a) for a in self.accounts]
+            self.accounts = load_accounts(self.bases[0], tindex, self.kind, email_map)
+            self._refresh_source_values(keep_selection=True)
+            self.refresh_target()
             if len(self.accounts) < 2:
                 self.logln(self.tr.t("g_need_two", n=len(self.accounts)), "warn")
                 self.move_btn.state(["disabled"])
             else:
                 self.move_btn.state(["!disabled"])
-            if self.accounts:
-                self.source_combo.current(0)
-                self.on_source_change()
+            self.populate_sessions()
             self.logln(self.tr.t("g_loaded", nb=len(self.bases), na=len(self.accounts)), "ok")
-            self.status(self.tr.t("g_status_loaded", a=len(self.accounts), b=len(self.bases)))
 
         def refresh_target(self):
             src = self.current_source()
-            prev_id = self.current_target()["id"] if self.current_target() else None
             self.target_accounts = [a for a in self.accounts if not src or a["id"] != src["id"]]
-            self.target_combo["values"] = [self.acc_label(a) for a in self.target_accounts]
-            if not self.target_accounts:
-                self.target_combo.set("")
-                return
-            idx = 0
-            for j, a in enumerate(self.target_accounts):
-                if a["id"] == prev_id:
-                    idx = j
-                    break
-            self.target_combo.current(idx)
+            ph = self.tr.t("g_target_ph")
+            self.target_combo["values"] = [ph] + [self.acc_label(a) for a in self.target_accounts]
+            # Hedef bilinçli seçilsin: her zaman placeholder'da başlat.
+            self.target_combo.current(0)
 
         def on_source_change(self):
             self.refresh_target()
@@ -620,6 +329,8 @@ def run_gui():
             acc = self.current_source()
             if not acc:
                 self.count_var.set("")
+                self.set_preview("")
+                self.detail_var.set(self.tr.t("g_pick_hint"))
                 return
             flt = self.filter_var.get().strip().lower()
             shown = 0
@@ -653,14 +364,17 @@ def run_gui():
                 f"cli       : {s['cli']}\n"
                 f"sid       : {s['sid']}\n"
                 f"{self.tr.t('d_transcript')}: {s['transcript'] if s['transcript'] else none}")
-            self.set_preview(first_user_message(s["transcript"]))
-            self.status(self.tr.t("g_selected", title=s["title"]))
+            self.set_preview(session_preview(s, limit=1500))
+            self.app.status(self.tr.t("g_selected", title=s["title"]))
 
         def on_move(self):
             src = self.current_source()
-            tgt = self.current_target()
-            if not src or not tgt:
+            if not src:
                 messagebox.showwarning(self.tr.t("mb_missing_t"), self.tr.t("mb_missing"))
+                return
+            tgt = self.current_target()
+            if not tgt:
+                messagebox.showwarning(self.tr.t("mb_no_target_t"), self.tr.t("mb_no_target"))
                 return
             if src["id"] == tgt["id"]:
                 messagebox.showwarning(self.tr.t("mb_same_t"), self.tr.t("mb_same"))
@@ -672,13 +386,13 @@ def run_gui():
             picked = [src["sessions"][int(i)] for i in sel]
             if not messagebox.askyesno(self.tr.t("mb_confirm_t"),
                                        self.tr.t("mb_confirm", n=len(picked),
-                                                 src=src["id"][:8], tgt=tgt["id"][:8])):
+                                                 src=account_who(src), tgt=account_who(tgt))):
                 return
 
             copied = skipped = overwritten = 0
             forced = None
             self.logln("")
-            self.logln(self.tr.t("g_move_log_hdr", src=src["id"][:8], tgt=tgt["id"][:8]))
+            self.logln(self.tr.t("g_move_log_hdr", src=account_who(src), tgt=account_who(tgt)))
             remaining_conf = sum(1 for s in picked if find_conflicts(tgt, s))
             for s in picked:
                 rel = target_rel_path(tgt, s)
@@ -687,7 +401,7 @@ def run_gui():
                     remaining_conf -= 1
                     decision = forced
                     if decision is None:
-                        dlg = ConflictDialog(self, s, conflicts, remaining_conf)
+                        dlg = ConflictDialog(self.app, s, conflicts, remaining_conf)
                         decision, apply_all = dlg.result
                         if apply_all:
                             forced = decision
@@ -695,25 +409,140 @@ def run_gui():
                         self.logln(self.tr.t("g_move_skipped", title=s["title"]), "warn")
                         skipped += 1
                         continue
-                    for e in mirror_remove(self.bases, [c["rel"] for c in conflicts]):
+                    for e in perform_remove(self.bases, conflicts):
                         self.logln("    [!] " + e, "warn")
-                    written, werr = mirror_write(self.bases, s["path"], rel)
+                    written, werr = perform_copy(self.bases, s, rel)
                     for e in werr:
                         self.logln("    [!] " + e, "warn")
                     self.logln(self.tr.t("g_move_over", title=s["title"], n=len(written)), "ok")
                     overwritten += 1
                 else:
-                    written, werr = mirror_write(self.bases, s["path"], rel)
+                    written, werr = perform_copy(self.bases, s, rel)
                     for e in werr:
                         self.logln("    [!] " + e, "warn")
                     self.logln(self.tr.t("g_move_copied", title=s["title"], n=len(written)), "ok")
                     copied += 1
 
             self.logln(self.tr.t("g_move_done", c=copied, o=overwritten, s=skipped))
-            self.status(self.tr.t("g_move_status", c=copied, o=overwritten, s=skipped))
-            self.reload()
+            self.app.status(self.tr.t("g_move_status", c=copied, o=overwritten, s=skipped))
+            self.app.reload()
             messagebox.showinfo(self.tr.t("mb_done_t"),
                                 self.tr.t("mb_done", c=copied, o=overwritten, s=skipped))
+
+    class App(tk.Tk):
+        def __init__(self):
+            super().__init__()
+            self.tr = tr
+            self.geometry("1180x820")
+            self.minsize(1000, 680)
+            self.configure(bg=CLR_BG)
+            self.email_map = {}
+            self.tindex = {}
+            self.panes = {}
+            self._init_style()
+            self._build()
+            self.retranslate(initial=True)
+            self.reload()
+
+        def _init_style(self):
+            st = ttk.Style(self)
+            try:
+                st.theme_use("clam")
+            except Exception:
+                pass
+            st.configure(".", background=CLR_BG)
+            st.configure("TFrame", background=CLR_BG)
+            st.configure("Card.TFrame", background="white")
+            st.configure("TLabel", background=CLR_BG, font=("Segoe UI", 9))
+            st.configure("TLabelframe", background=CLR_BG)
+            st.configure("TLabelframe.Label", background=CLR_BG,
+                         font=("Segoe UI", 9, "bold"), foreground="#374151")
+            st.configure("Muted.TLabel", foreground=CLR_MUTED)
+            st.configure("Store.TLabel", foreground=CLR_MUTED, font=("Consolas", 8))
+            st.configure("DlgTitle.TLabel", background="white",
+                         font=("Segoe UI", 11, "bold"), foreground=CLR_DANGER)
+            st.configure("DlgSub.TLabel", background="white",
+                         font=("Segoe UI", 10), foreground=CLR_ACCENT)
+            st.configure("Bold.TLabel", font=("Segoe UI", 9, "bold"))
+            st.configure("TButton", font=("Segoe UI", 9), padding=4)
+            st.configure("Accent.TButton", font=("Segoe UI", 10, "bold"),
+                         foreground="white", background=CLR_ACCENT, padding=6)
+            st.map("Accent.TButton",
+                   background=[("active", CLR_ACCENT_HOVER), ("disabled", "#9ca3af")])
+            st.configure("Treeview", rowheight=27, font=("Segoe UI", 9),
+                         fieldbackground="white", background="white")
+            st.configure("Treeview.Heading", font=("Segoe UI", 9, "bold"))
+            st.configure("TNotebook.Tab", font=("Segoe UI", 10, "bold"), padding=(16, 6))
+
+        def _build(self):
+            banner = tk.Frame(self, bg=CLR_BANNER)
+            banner.pack(fill="x")
+            self.banner_lbl = tk.Label(banner, bg=CLR_BANNER, fg="white", anchor="w",
+                                       font=("Segoe UI", 9, "bold"))
+            self.banner_lbl.pack(fill="x", pady=4)
+
+            top = ttk.Frame(self, padding=(12, 8))
+            top.pack(fill="x")
+            self.title_lbl = ttk.Label(top, style="Bold.TLabel")
+            self.title_lbl.pack(side="left")
+            self.btn_refresh = ttk.Button(top, command=self.reload)
+            self.btn_refresh.pack(side="right")
+            self.lang_combo = ttk.Combobox(top, state="readonly", width=10,
+                                           values=["Türkçe", "English"])
+            self.lang_combo.current(1 if self.tr.lang == "en" else 0)
+            self.lang_combo.pack(side="right", padx=8)
+            self.lang_combo.bind("<<ComboboxSelected>>", lambda e: self.on_lang_change())
+            self.lbl_lang = ttk.Label(top, style="Bold.TLabel")
+            self.lbl_lang.pack(side="right")
+
+            self.nb = ttk.Notebook(self)
+            self.nb.pack(fill="both", expand=True, padx=12, pady=(0, 6))
+            for kind in SESSION_KINDS:
+                pane = SessionPane(self.nb, self, kind)
+                self.nb.add(pane, text=self.tr.t("type_" + kind))
+                self.panes[kind] = pane
+
+            self.status_var = tk.StringVar(value="")
+            status = tk.Frame(self, bg="#e5e7eb")
+            status.pack(fill="x", side="bottom")
+            tk.Label(status, textvariable=self.status_var, bg="#e5e7eb", anchor="w",
+                     font=("Segoe UI", 8), fg="#374151").pack(fill="x", padx=8, pady=2)
+
+        def status(self, msg):
+            self.status_var.set(msg)
+
+        def retranslate(self, initial=False):
+            self.title(self.tr.t("app_title"))
+            self.banner_lbl.config(text=self.tr.t("g_banner"))
+            self.title_lbl.config(text=self.tr.t("app_title"))
+            self.btn_refresh.config(text=self.tr.t("g_refresh"))
+            self.lbl_lang.config(text=self.tr.t("g_lang"))
+            for i, kind in enumerate(SESSION_KINDS):
+                self.nb.tab(i, text=self.tr.t("type_" + kind))
+            # Sekmelerin sabit metinleri (etiketler, sütun başlıkları, taşı tuşu)
+            # ilk açılışta da atanmalı; yoksa boş görünürler.
+            for pane in self.panes.values():
+                pane.retranslate()
+            if initial:
+                self.status_var.set(self.tr.t("g_ready"))
+            else:
+                self.status(self.tr.t("g_ready"))
+
+        def on_lang_change(self):
+            self.tr.set_lang("en" if self.lang_combo.current() == 1 else "tr")
+            self.retranslate()
+
+        def reload(self):
+            self.email_map = build_email_index()
+            self.tindex = build_transcript_index()
+            total_bases = 0
+            total_accounts = 0
+            for kind, pane in self.panes.items():
+                ti = self.tindex if kind == "code" else {}
+                pane.reload(self.email_map, ti)
+                total_bases += len(pane.bases)
+                total_accounts += len(pane.accounts)
+            self.status(self.tr.t("g_status_loaded", a=total_accounts, b=total_bases))
 
     App().mainloop()
 

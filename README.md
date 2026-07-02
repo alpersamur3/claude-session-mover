@@ -9,8 +9,12 @@
 
 **Dil / Language:  [🇹🇷 Türkçe](#tr) · [🇬🇧 English](#en)**
 
-Claude masaüstü uygulamasındaki sohbetleri bir hesaptan diğerine taşıyan küçük bir
-araç. / A small tool that moves Claude desktop chats from one account to another.
+Claude masaüstü uygulamasındaki oturumları bir hesaptan diğerine taşıyan küçük bir
+araç. İki oturum tipi desteklenir: **Claude Code** (masaüstü sohbetleri) ve
+**Cowork** (agent oturumları). Hesaplar **e-posta** ile gösterilir. /
+A small tool that moves Claude desktop sessions from one account to another.
+Two session types are supported: **Claude Code** (desktop chats) and **Cowork**
+(agent sessions). Accounts are shown by **e-mail**.
 
 | Dosya / File | Tür / Type | Açıklama / Description |
 |--------------|------------|------------------------|
@@ -47,6 +51,20 @@ Kayıt dosyasının iki kilit alanı:
 - `sessionId` → `local_<uuid>` (dosya adıyla **aynıdır**)
 - `cliSessionId` → asıl transkript `.jsonl` dosyasını işaret eder
 
+### İki oturum tipi
+
+| Tip | Depo klasörü | Taşınan |
+|-----|--------------|---------|
+| **Claude Code** | `claude-code-sessions` | `local_*.json` kaydı |
+| **Cowork** | `local-agent-mode-sessions` | `local_*.json` kaydı **+ yanındaki `local_<uuid>/` klasörü** (audit, outputs, uploads, .claude) |
+
+- **CLI:** çalıştırınca önce **hangi tipi taşıyacağını sorar** (1 = Claude Code, 2 = Cowork).
+- **GUI:** üstte **iki sekme** vardır — her tip kendi sekmesinde.
+- **E-posta gösterimi:** hesap UUID'leri, Cowork oturumlarındaki
+  `.claude/.claude.json → oauthAccount` alanından **e-postaya** çözülür. Çözülemeyen
+  hesaplar kısa UUID ile gösterilir. Hesaplar **son aktiviteye göre** sıralanır ve
+  kaynak listesinde **hiç oturumu olmayan hesaplar gizlenir**.
+
 ### Gereksinim
 - **Python 3.8+** (gerçek kurulum; Microsoft Store/sandbox Python **önerilmez**).
 - GUI için **tkinter** (python.org kurulumlarında hazır gelir).
@@ -78,11 +96,13 @@ GUI'de sağ üstten **TR/EN** dilini anında değiştirebilirsiniz.
 **Adımlar:**
 1. **Claude masaüstü uygulamasını tamamen kapatın** (sistem tepsisinden de çıkın).
 2. Aracı çalıştırın.
-3. **Kaynak hesabı** seçin → sohbetler listelenir.
-4. Taşımak istediğiniz sohbet(ler)i seçin.
-5. **Hedef hesabı** seçin (kaynak listede çıkmaz).
-6. Taşıyın. Çakışma varsa boyutları görüp **üzerine yaz / atla** kararını verin.
-7. Claude'u yeniden açın; sohbet hedef hesapta görünür (GUI'de **🔄 Yenile**).
+3. **Oturum tipini** seçin — CLI başta sorar; GUI'de **Claude Code / Cowork** sekmesi.
+4. **Kaynak hesabı** seçin (e-posta ile listelenir) → oturumlar listelenir.
+5. Taşımak istediğiniz oturum(lar)ı seçin.
+6. **Hedef hesabı** seçin (kaynak listede çıkmaz; GUI'de **hedef otomatik seçilmez**,
+   bilinçli seçmeniz gerekir).
+7. Taşıyın. Çakışma varsa boyutları görüp **üzerine yaz / atla** kararını verin.
+8. Claude'u yeniden açın; oturum hedef hesapta görünür (GUI'de **🔄 Yenile**).
 
 ### Çakışma ve "üzerine yazma"
 Hedefte aynı sohbet zaten varsa araç sessizce atlamaz; uyarır ve **boyut
@@ -107,7 +127,9 @@ Demo modu yalnızca `sample-data/` klasörünü okur/yazar. Üzerine yazma dener
 ### Güvenlik / Geri alma
 - Araç kaynak kaydı **kopyalar**; orijinal yerinde kalır.
 - **Üzerine yazma** hedefteki mevcut kaydı değiştirir; gerekirse önce yedek alın.
-- Yalnızca `local_*.json` taşınır; transkriptlere dokunulmaz.
+- **Claude Code:** yalnızca `local_*.json` taşınır; transkriptlere dokunulmaz.
+- **Cowork:** `local_*.json` **ile birlikte yanındaki `local_<uuid>/` klasörü** de
+  kopyalanır (oturum verisi orada). Kaynak yine yerinde kalır.
 
 ### Nasıl çalışır (teknik)
 - Tüm olası depo konumları taranır ve **gerçek yola (`realpath`) çözülür**:
@@ -171,6 +193,20 @@ Two key fields of the record:
 - `sessionId` → `local_<uuid>` (**equals** the file name)
 - `cliSessionId` → points to the actual transcript `.jsonl`
 
+### Two session types
+
+| Type | Store folder | What is moved |
+|------|--------------|---------------|
+| **Claude Code** | `claude-code-sessions` | the `local_*.json` record |
+| **Cowork** | `local-agent-mode-sessions` | the `local_*.json` record **+ its sibling `local_<uuid>/` folder** (audit, outputs, uploads, .claude) |
+
+- **CLI:** on start it **asks which type to move** (1 = Claude Code, 2 = Cowork).
+- **GUI:** there are **two tabs** at the top — one per type.
+- **E-mail display:** account UUIDs are resolved to an **e-mail** from each Cowork
+  session's `.claude/.claude.json → oauthAccount`. Unresolved accounts fall back to a
+  short UUID. Accounts are **sorted by last activity**, and accounts with **no
+  sessions are hidden from the source** list.
+
 ### Requirements
 - **Python 3.8+** (a real install; Microsoft Store/sandbox Python **not recommended**).
 - **tkinter** for the GUI (bundled with python.org installers).
@@ -202,11 +238,14 @@ In the GUI you can switch **TR/EN** instantly from the top-right.
 **Steps:**
 1. **Fully close the Claude desktop app** (quit from the system tray too).
 2. Run the tool.
-3. Select the **source account** → chats are listed.
-4. Select the chat(s) to move.
-5. Select the **target account** (the source is excluded from the list).
-6. Move. On conflicts, review sizes and choose **overwrite / skip**.
-7. Reopen Claude; the chat appears in the target account (in the GUI click **🔄 Refresh**).
+3. Choose the **session type** — the CLI asks first; the GUI has a
+   **Claude Code / Cowork** tab.
+4. Select the **source account** (listed by e-mail) → sessions are listed.
+5. Select the session(s) to move.
+6. Select the **target account** (the source is excluded; in the GUI the target is
+   **not auto-selected** — you must pick it deliberately).
+7. Move. On conflicts, review sizes and choose **overwrite / skip**.
+8. Reopen Claude; the session appears in the target account (in the GUI click **🔄 Refresh**).
 
 ### Conflicts and "overwrite"
 If the same chat already exists in the target, the tool does not skip silently; it
@@ -232,7 +271,9 @@ Demo mode only reads/writes `sample-data/`. If you test an overwrite, reset it w
 ### Safety / Undo
 - The tool **copies** the source record; the original stays in place.
 - **Overwrite** replaces the existing target record; back it up first if unsure.
-- Only `local_*.json` is moved; transcripts are never touched.
+- **Claude Code:** only `local_*.json` is moved; transcripts are never touched.
+- **Cowork:** the `local_*.json` **and its sibling `local_<uuid>/` folder** are copied
+  (the session data lives there). The source still stays in place.
 
 ### How it works (technical)
 - All candidate store locations are scanned and **resolved to their real path
