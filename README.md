@@ -129,7 +129,10 @@ Demo modu yalnızca `sample-data/` klasörünü okur/yazar. Üzerine yazma dener
 - **Üzerine yazma** hedefteki mevcut kaydı değiştirir; gerekirse önce yedek alın.
 - **Claude Code:** yalnızca `local_*.json` taşınır; transkriptlere dokunulmaz.
 - **Cowork:** `local_*.json` **ile birlikte yanındaki `local_<uuid>/` klasörü** de
-  kopyalanır (oturum verisi orada). Kaynak yine yerinde kalır.
+  kopyalanır (oturum verisi orada). Kaynak yine yerinde kalır. Ayrıca kopyada
+  **kaynak hesap/space UUID'leri hedefinkilerle yeniden yazılır** — transkript,
+  yan klasörde tam yola göre adlandırılmış bir klasörde tutulduğu için bu şart;
+  yoksa Claude taşınan oturumu bulamayıp **bağlamsız (boş) açar**.
 
 ### Nasıl çalışır (teknik)
 - Tüm olası depo konumları taranır ve **gerçek yola (`realpath`) çözülür**:
@@ -273,7 +276,10 @@ Demo mode only reads/writes `sample-data/`. If you test an overwrite, reset it w
 - **Overwrite** replaces the existing target record; back it up first if unsure.
 - **Claude Code:** only `local_*.json` is moved; transcripts are never touched.
 - **Cowork:** the `local_*.json` **and its sibling `local_<uuid>/` folder** are copied
-  (the session data lives there). The source still stays in place.
+  (the session data lives there). The source still stays in place. The copy also has
+  its **source account/space UUIDs rewritten to the target's** — the transcript is
+  stored in a folder named after its full path, so without this Claude can't find the
+  moved session and **opens it empty (no context)**.
 
 ### How it works (technical)
 - All candidate store locations are scanned and **resolved to their real path

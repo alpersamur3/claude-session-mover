@@ -411,13 +411,15 @@ def run_gui():
                         continue
                     for e in perform_remove(self.bases, conflicts):
                         self.logln("    [!] " + e, "warn")
-                    written, werr = perform_copy(self.bases, s, rel)
+                    written, werr = perform_copy(self.bases, s, rel,
+                                                 email_pair=(src.get("email"), tgt.get("email")))
                     for e in werr:
                         self.logln("    [!] " + e, "warn")
                     self.logln(self.tr.t("g_move_over", title=s["title"], n=len(written)), "ok")
                     overwritten += 1
                 else:
-                    written, werr = perform_copy(self.bases, s, rel)
+                    written, werr = perform_copy(self.bases, s, rel,
+                                                 email_pair=(src.get("email"), tgt.get("email")))
                     for e in werr:
                         self.logln("    [!] " + e, "warn")
                     self.logln(self.tr.t("g_move_copied", title=s["title"], n=len(written)), "ok")

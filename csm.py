@@ -374,24 +374,94 @@ def mirror_write(bases, src_file, rel):
     return written, errs
 
 
-def perform_copy(bases, session, rel):
+def _remap_bytes(path, replacements):
+    """Bir dosyanın içeriğinde (byte düzeyinde) eski->yeni değişimlerini uygula."""
+    try:
+        data = Path(path).read_bytes()
+    except Exception:
+        return
+    orig = data
+    for old, new in replacements:
+        if old and new and old != new:
+            data = data.replace(old.encode("utf-8"), new.encode("utf-8"))
+    if data != orig:
+        try:
+            Path(path).write_bytes(data)
+        except Exception:
+            pass
+
+
+def cowork_remap(json_path, companion_dir, replacements):
+    """
+    Cowork oturumu bir hesaptan diğerine taşınınca, kayıt + yan klasördeki
+    kaynak hesap/space UUID'lerini (ve varsa e-postayı) hedefinkilerle değiştirir.
+
+    Kritik olan: transkript, yan klasörde tam yola göre adlandırılmış bir klasörde
+    (.claude/projects/C--...-<hesap>-<space>-...-outputs/<cli>.jsonl) tutulur.
+    UUID'ler değişmezse Claude, taşınan oturumu yeni cwd'de bulamaz ve bağlamsız
+    (boş) yeni bir oturum açar. Bu yüzden hem dosya içerikleri hem de klasör
+    adları yeniden yazılır.
+    """
+    _remap_bytes(json_path, replacements)
+    if not (companion_dir and Path(companion_dir).is_dir()):
+        return
+    # 1) tüm dosya içeriklerini yeniden yaz
+    for dp, _dn, fn in os.walk(companion_dir):
+        for f in fn:
+            _remap_bytes(os.path.join(dp, f), replacements)
+    # 2) klasör/dosya adlarını (en derinden başlayarak) yeniden adlandır
+    for dp, dn, fn in os.walk(companion_dir, topdown=False):
+        for name in fn + dn:
+            new_name = name
+            for old, new in replacements:
+                if old and new and old != new and old in new_name:
+                    new_name = new_name.replace(old, new)
+            if new_name != name:
+                try:
+                    os.rename(os.path.join(dp, name), os.path.join(dp, new_name))
+                except Exception:
+                    pass
+
+
+def cowork_replacements(session, rel, email_pair=None):
+    """Kaynak (session['rel']) ve hedef (rel) yollarından (eski, yeni) çiftlerini üret."""
+    reps = []
+    s_parts = session["rel"].parts
+    t_parts = rel.parts
+    if len(s_parts) >= 2 and len(t_parts) >= 2:
+        if s_parts[0] != t_parts[0]:      # hesap UUID
+            reps.append((s_parts[0], t_parts[0]))
+        if s_parts[1] != t_parts[1]:      # space/organizationUuid
+            reps.append((s_parts[1], t_parts[1]))
+    if email_pair:
+        se, te = email_pair
+        if se and te and se != te:
+            reps.append((se, te))
+    return reps
+
+
+def perform_copy(bases, session, rel, email_pair=None):
     """
     Bir oturumu tüm depolara kopyala. Cowork ise kayıt dosyasıyla birlikte
-    yan klasörü (audit.jsonl, outputs, uploads, .claude ...) de kopyalar.
+    yan klasörü (audit.jsonl, outputs, uploads, .claude ...) de kopyalar ve
+    iç yol/UUID referanslarını hedef hesaba göre yeniden yazar (bkz. cowork_remap).
     """
     written, errs = mirror_write(bases, session["path"], rel)
-    if session.get("kind") == "cowork" and session.get("folder"):
-        src_dir = Path(session["folder"])
-        if src_dir.is_dir():
-            rel_dir = rel.with_suffix("")
-            for base in bases:
-                dst = base / rel_dir
+    if session.get("kind") == "cowork":
+        src_dir = session.get("folder")
+        reps = cowork_replacements(session, rel, email_pair)
+        rel_dir = rel.with_suffix("")
+        for base in bases:
+            dst_dir = base / rel_dir
+            if src_dir and Path(src_dir).is_dir():
                 try:
-                    if dst.exists():
-                        shutil.rmtree(dst)
-                    shutil.copytree(src_dir, dst)
+                    if dst_dir.exists():
+                        shutil.rmtree(dst_dir)
+                    shutil.copytree(src_dir, dst_dir)
                 except Exception as e:
-                    errs.append(f"{dst} ({e})")
+                    errs.append(f"{dst_dir} ({e})")
+            if reps:
+                cowork_remap(base / rel, dst_dir, reps)
     return written, errs
 
 
@@ -560,13 +630,13 @@ def main():
                 continue
             for e in perform_remove(bases, conflicts):
                 print(f"    [!] {e}")
-            written, werr = perform_copy(bases, s, rel)
+            written, werr = perform_copy(bases, s, rel, email_pair=(source.get("email"), target.get("email")))
             for e in werr:
                 print(f"    [!] {e}")
             print(tr.t("r_overwritten", title=s["title"], n=len(written)))
             overwritten += 1
         else:
-            written, werr = perform_copy(bases, s, rel)
+            written, werr = perform_copy(bases, s, rel, email_pair=(source.get("email"), target.get("email")))
             for e in werr:
                 print(f"    [!] {e}")
             print("\n" + tr.t("r_copied", title=s["title"], n=len(written)))
