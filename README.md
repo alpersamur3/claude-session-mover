@@ -16,10 +16,16 @@ A small tool that moves Claude desktop sessions from one account to another.
 Two session types are supported: **Claude Code** (desktop chats) and **Cowork**
 (agent sessions). Accounts are shown by **e-mail**.
 
+**Yeni / New:** Claude Code ⇄ OpenAI Codex oturum dönüştürme — bir sohbeti diğer
+ajanda kaldığı yerden sürdürün. / Convert sessions between Claude Code and OpenAI
+Codex — continue a chat in the other agent where you left off.
+
 | Dosya / File | Tür / Type | Açıklama / Description |
 |--------------|------------|------------------------|
 | [`csm.py`](csm.py)   | Terminal (CLI)   | Soru-cevap akışı / Interactive prompts |
 | [`csmui.py`](csmui.py) | Tkinter (GUI)  | Liste, önizleme, boyut karşılaştırması / List, preview, size compare |
+| [`csbridge.py`](csbridge.py) | Ortak / Shared | Claude Code ⇄ Codex dönüştürme / conversion |
+| [`cspack.py`](cspack.py) | Ortak / Shared | Yedek paketi: dosyaya çıkar / geri yükle — backup bundle: export / restore |
 | [`i18n.py`](i18n.py)  | Ortak / Shared | TR/EN çeviriler / TR/EN translations |
 
 > ⚠️ **Resmî değildir / Unofficial.** Kendi sorumluluğunuzda kullanın. Use at your own risk.
@@ -123,6 +129,78 @@ py csm.py --demo
 
 Demo modu yalnızca `sample-data/` klasörünü okur/yazar. Üzerine yazma denersen
 `git restore sample-data` ile sıfırlayabilirsin.
+
+### Claude Code ⇄ Codex dönüştürme
+Bir oturumu **Claude Code'dan OpenAI Codex'e** ya da **Codex'ten Claude Code'a**
+dönüştürür; sohbete diğer ajanda kaldığı yerden devam edersiniz.
+
+```powershell
+py csm.py --bridge     # Terminal (veya py csm.py → [3])
+py csmui.py            # GUI → "Claude ⇄ Codex" sekmesi
+```
+
+| Yön | Kaynak | Hedef |
+|-----|--------|-------|
+| Claude Code → Codex | `~/.claude/projects/<proje>/<uuid>.jsonl` | `~/.codex/sessions/YYYY/MM/DD/rollout-…-<uuidv7>.jsonl` |
+| Codex → Claude Code | `~/.codex/sessions/…/rollout-*.jsonl` | `~/.claude/projects/<proje>/<uuid>.jsonl` |
+
+- **Kaynak değiştirilmez**; hedefte **yeni** bir oturum oluşturulur (yeni kimlikle).
+- **Mesajlar birebir** aktarılır. **Araç çağrıları/sonuçları** iki tarafta farklı
+  olduğu için Codex'in kendi Claude içe aktarıcısıyla aynı biçimde **metne** çevrilir
+  (`[external_agent_tool_call: Bash] …`, `[external_agent_tool_result] …`). Görseller
+  `[external unsupported block: image]` olur. Codex'in şifreli düşünce içeriği
+  aktarılamaz; yalnızca özetleri gelir.
+- **Codex uygulamasında görünme:** Codex masaüstü listesini `~/.codex/state_*.sqlite`
+  içindeki `threads` tablosundan okur. "Codex uygulamasının listesine de ekle"
+  seçiliyse araç oraya bir satır ekler (önce `state_*.sqlite.csm-bak` yedeği alınır)
+  ve Codex'in içe aktarma defterine (`external_agent_session_imports.json`) not düşer;
+  böylece Codex aynı oturumu ikinci kez içe aktarmaz. Seçili değilse oturum
+  `codex resume <kimlik>` ile açılır.
+- **Claude uygulamasında görünme:** Codex → Claude yönünde bir **Claude hesabı**
+  seçerseniz o hesaba `local_*.json` kaydı yazılır; seçmezseniz transkript
+  `claude --resume <kimlik>` ile (proje klasöründe) açılır.
+- İşlemden önce **Claude ve Codex uygulamalarını kapatın**.
+- Codex veri kökü farklıysa: `CODEX_HOME=<yol>` (veya `CSM_CODEX=<yol>`).
+
+### 📦 Yedek / Aktar (dosyaya çıkar, başka bilgisayarda yükle)
+Bir oturumu **tek dosyaya** (`.csmpack`, aslında bir zip) yedekler; o dosyayı başka
+bir bilgisayara kopyalayıp **istediğin hesaba** geri yüklersin.
+
+```powershell
+py csm.py --export             # Terminal (veya py csm.py → [4])
+py csm.py --import yedek.csmpack
+py csmui.py                    # GUI → "📦 Yedek / Aktar" sekmesi
+```
+
+Pakete oturuma ait **her şey** girer:
+
+| Tip | Pakete girenler |
+|-----|-----------------|
+| **Claude Code** | `local_*.json` kaydı, transkript `.jsonl`, `projects/<proje>/memory/` (hafıza dosyaları), `projects/<proje>/<oturum>/` (araç çıktıları, alt ajanlar), `%TEMP%/claude/<proje>/<oturum>/` (scratchpad, görevler) |
+| **Cowork** | `local_*.json` kaydı + yanındaki `local_<uuid>/` klasörü (audit, outputs, uploads, `.claude`) |
+| **Codex** | `rollout-*.jsonl` + `visualizations/<tarih>/<thread>/` + `generated_images/<thread>/` |
+
+Geri yüklerken:
+- **Yollar bu bilgisayara uyarlanır.** Kullanıcı klasörü (`C:\Users\ali` → `C:\Users\veli`),
+  `%TEMP%`, `.claude` / `.codex` kökleri ve proje klasörü adları (`C--Users-ali-Desktop-x`)
+  dosya içeriklerinde ve klasör adlarında yeniden yazılır. JSON içindeki kaçışlı
+  (`C:\\Users\\…`) biçim de kapsanır. Resim/veritabanı gibi ikili dosyalara dokunulmaz.
+- **Proje klasörü bu bilgisayarda başka yerdeyse** "Klasör eşlemesi" ile hedef klasörü
+  seçersin (CLI'de sorulur, GUI'de listeden "Klasörü değiştir…").
+- **Hedef Claude hesabını sen seçersin**; kayıt o hesaba yazılır ve hesaba bağlı
+  UUID/e-posta referansları hedefe göre düzeltilir (Cowork dahil). Hesap seçmezsen
+  yalnızca dosyalar geri yüklenir, oturum masaüstü uygulamasında görünmez.
+- **Codex oturumları** için "Codex listesine ekle" seçiliyse `state_*.sqlite` içine
+  kayıt eklenir. Aynı thread bu bilgisayarda zaten varsa **yeni kimlikle** yüklenir.
+- **Çakışma** (aynı oturum hedef hesapta zaten var) durumunda üzerine yaz / atla sorulur.
+- Aynı adlı **hafıza dosyaları** varsayılan olarak korunur; "üzerine yaz" seçeneği vardır.
+
+Notlar:
+- Scratchpad klasörleri büyük olabilir; GUI'de "Pakete eklenecekler" kutucuklarından
+  hafıza / scratchpad / araç çıktılarını hariç tutabilirsin (CLI de sorar).
+- Paket, kullanıcı-genel `~/.claude/CLAUDE.md` veya depo içindeki `.claude/` ayarlarını
+  **içermez** — bunlar oturuma değil, bilgisayara/projeye aittir.
+- Paket düz bir zip'tir; içindeki `manifest.json` neyin nereden geldiğini yazar.
 
 ### Güvenlik / Geri alma
 - Araç kaynak kaydı **kopyalar**; orijinal yerinde kalır.
@@ -270,6 +348,79 @@ py csm.py --demo
 
 Demo mode only reads/writes `sample-data/`. If you test an overwrite, reset it with
 `git restore sample-data`.
+
+### Claude Code ⇄ Codex conversion
+Converts a session **from Claude Code to OpenAI Codex** or **from Codex to Claude
+Code**, so you can continue the chat in the other agent where you left off.
+
+```powershell
+py csm.py --bridge     # Terminal (or py csm.py → [3])
+py csmui.py            # GUI → "Claude ⇄ Codex" tab
+```
+
+| Direction | Source | Target |
+|-----------|--------|--------|
+| Claude Code → Codex | `~/.claude/projects/<project>/<uuid>.jsonl` | `~/.codex/sessions/YYYY/MM/DD/rollout-…-<uuidv7>.jsonl` |
+| Codex → Claude Code | `~/.codex/sessions/…/rollout-*.jsonl` | `~/.claude/projects/<project>/<uuid>.jsonl` |
+
+- **The source is never modified**; a **new** session (with a new id) is created on the target.
+- **Messages carry over verbatim.** **Tool calls/results** differ between the two
+  agents, so they are turned into **text** in the same format Codex's own Claude
+  importer uses (`[external_agent_tool_call: Bash] …`, `[external_agent_tool_result] …`).
+  Images become `[external unsupported block: image]`. Codex's encrypted reasoning
+  can't be carried over; only its summaries are.
+- **Showing up in the Codex app:** the Codex desktop app reads its list from the
+  `threads` table in `~/.codex/state_*.sqlite`. With "Also add to the Codex app's list"
+  enabled, the tool inserts a row there (after backing it up to
+  `state_*.sqlite.csm-bak`) and records the import in Codex's import ledger
+  (`external_agent_session_imports.json`) so Codex won't import the same session a
+  second time. Otherwise open it with `codex resume <id>`.
+- **Showing up in the Claude app:** in the Codex → Claude direction, pick a **Claude
+  account** to write a `local_*.json` record for it; otherwise open the transcript
+  with `claude --resume <id>` (from the project folder).
+- **Close the Claude and Codex apps** before converting.
+- Custom Codex data root: `CODEX_HOME=<path>` (or `CSM_CODEX=<path>`).
+
+### 📦 Backup / Transfer (export to a file, restore on another computer)
+Backs a session up into **a single file** (`.csmpack`, really a zip) that you can copy
+to another computer and restore **into any account you choose**.
+
+```powershell
+py csm.py --export             # Terminal (or py csm.py → [4])
+py csm.py --import backup.csmpack
+py csmui.py                    # GUI → "📦 Backup / Transfer" tab
+```
+
+**Everything** belonging to the session goes in:
+
+| Type | What is bundled |
+|------|-----------------|
+| **Claude Code** | the `local_*.json` record, the `.jsonl` transcript, `projects/<project>/memory/` (memory files), `projects/<project>/<session>/` (tool outputs, subagents), `%TEMP%/claude/<project>/<session>/` (scratchpad, tasks) |
+| **Cowork** | the `local_*.json` record + its `local_<uuid>/` folder (audit, outputs, uploads, `.claude`) |
+| **Codex** | `rollout-*.jsonl` + `visualizations/<date>/<thread>/` + `generated_images/<thread>/` |
+
+On restore:
+- **Paths are adapted to this computer.** The home folder (`C:\Users\ann` → `C:\Users\bob`),
+  `%TEMP%`, the `.claude` / `.codex` roots and project folder names (`C--Users-ann-Desktop-x`)
+  are rewritten inside file contents and in file/folder names, including the
+  JSON-escaped form (`C:\\Users\\…`). Binary files (images, databases) are left alone.
+- **If the project folder lives elsewhere here**, set the target with "Folder mapping"
+  (the CLI asks; the GUI has "Change folder…").
+- **You pick the target Claude account**; the record is written there and account-bound
+  UUID/e-mail references are rewritten for it (Cowork included). Without an account only
+  the files are restored and the session won't appear in the desktop app.
+- For **Codex sessions**, "Add to the Codex list" inserts a row into `state_*.sqlite`.
+  If that thread already exists here, it is imported **under a new id**.
+- On a **conflict** (the session already exists in the target account) you are asked to
+  overwrite or skip.
+- Existing **memory files** are kept by default; there is an "overwrite" option.
+
+Notes:
+- Scratchpad folders can be large; the GUI's "Include in the bundle" checkboxes let you
+  leave out memory / scratchpad / tool outputs (the CLI asks too).
+- The bundle does **not** include the user-wide `~/.claude/CLAUDE.md` or a repo's
+  `.claude/` settings — those belong to the machine/project, not to the session.
+- The bundle is a plain zip; its `manifest.json` records where everything came from.
 
 ### Safety / Undo
 - The tool **copies** the source record; the original stays in place.
