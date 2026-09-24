@@ -6,6 +6,7 @@
 ![GUI](https://img.shields.io/badge/GUI-Tkinter-8a2be2)
 ![i18n](https://img.shields.io/badge/i18n-TR%20%2F%20EN-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![Release](https://img.shields.io/github/v/release/alpersamur3/claude-session-mover?label=exe%20indir%20%C2%B7%20download)](https://github.com/alpersamur3/claude-session-mover/releases/latest)
 
 **Dil / Language:  [🇹🇷 Türkçe](#tr) · [🇬🇧 English](#en)**
 
@@ -27,6 +28,7 @@ Codex — continue a chat in the other agent where you left off.
 | [`csbridge.py`](csbridge.py) | Ortak / Shared | Claude Code ⇄ Codex dönüştürme / conversion |
 | [`cspack.py`](cspack.py) | Ortak / Shared | Yedek paketi: dosyaya çıkar / geri yükle — backup bundle: export / restore |
 | [`i18n.py`](i18n.py)  | Ortak / Shared | TR/EN çeviriler / TR/EN translations |
+| [`build.py`](build.py) | Derleme / Build | Tek dosyalık .exe üretir / builds the standalone .exe files |
 
 > ⚠️ **Resmî değildir / Unofficial.** Kendi sorumluluğunuzda kullanın. Use at your own risk.
 
@@ -70,6 +72,22 @@ Kayıt dosyasının iki kilit alanı:
   `.claude/.claude.json → oauthAccount` alanından **e-postaya** çözülür. Çözülemeyen
   hesaplar kısa UUID ile gösterilir. Hesaplar **son aktiviteye göre** sıralanır ve
   kaynak listesinde **hiç oturumu olmayan hesaplar gizlenir**.
+
+### Kurulum gerektirmeyen sürüm (.exe)
+Python kurmadan kullanmak için [Releases](https://github.com/alpersamur3/claude-session-mover/releases/latest)
+sayfasındaki dosyaları indir, çift tıkla — başka hiçbir şey gerekmez:
+
+| Dosya | Ne işe yarar |
+|-------|--------------|
+| `ClaudeSessionMover.exe` | Grafik arayüz (tüm sekmeler: taşıma, Claude ⇄ Codex, yedek/aktar) |
+| `csm.exe` | Terminal sürümü (`csm.exe --bridge`, `--export`, `--import <dosya>`, `--cleanup`, `--demo`) |
+
+- İlk açılışta Windows SmartScreen "bilinmeyen yayımcı" uyarısı verebilir (dosya imzalı
+  değil): **Daha fazla bilgi → Yine de çalıştır**.
+- Tek dosyalıdır, kendini geçici klasöre açtığı için ilk açılış birkaç saniye sürer.
+- Denemek için: `ClaudeSessionMover.exe --demo` (gerçek verine dokunmaz).
+- Kendin derlemek istersen: `py -m pip install -U pyinstaller` sonra `py build.py`
+  (PyInstaller **6.22+** şart; 6.16 ve öncesi bozuk exe üretiyor).
 
 ### Gereksinim
 - **Python 3.8+** (gerçek kurulum; Microsoft Store/sandbox Python **önerilmez**).
@@ -287,6 +305,24 @@ Two key fields of the record:
   session's `.claude/.claude.json → oauthAccount`. Unresolved accounts fall back to a
   short UUID. Accounts are **sorted by last activity**, and accounts with **no
   sessions are hidden from the source** list.
+
+### No-install build (.exe)
+To use it without installing Python, grab the files from the
+[latest release](https://github.com/alpersamur3/claude-session-mover/releases/latest)
+and double-click — nothing else is needed:
+
+| File | What it is |
+|------|------------|
+| `ClaudeSessionMover.exe` | The GUI (all tabs: move, Claude ⇄ Codex, backup/transfer) |
+| `csm.exe` | The terminal version (`csm.exe --bridge`, `--export`, `--import <file>`, `--cleanup`, `--demo`) |
+
+- On first launch Windows SmartScreen may warn about an unknown publisher (the file is
+  not signed): **More info → Run anyway**.
+- It is a single file that unpacks itself to a temp folder, so the first start takes a
+  few seconds.
+- Try it safely with `ClaudeSessionMover.exe --demo` (it never touches your real data).
+- To build it yourself: `py -m pip install -U pyinstaller`, then `py build.py`
+  (PyInstaller **6.22+** is required; 6.16 and older produce broken exes).
 
 ### Requirements
 - **Python 3.8+** (a real install; Microsoft Store/sandbox Python **not recommended**).
