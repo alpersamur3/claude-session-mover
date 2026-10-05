@@ -1,509 +1,279 @@
-# Claude Session Mover · Claude Sohbet Taşıyıcı
+# Claude Session Mover
 
-![Windows](https://img.shields.io/badge/Windows-tested-2ea44f)
-![macOS · Linux](https://img.shields.io/badge/macOS%20%C2%B7%20Linux-experimental-orange)
+**Move your Claude sessions between accounts. Back them up, or continue them in Codex.**
+
+[![Release](https://img.shields.io/github/v/release/alpersamur3/claude-session-mover)](https://github.com/alpersamur3/claude-session-mover/releases/latest)
+![Windows](https://img.shields.io/badge/Windows-primary-2ea44f)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
-![GUI](https://img.shields.io/badge/GUI-Tkinter-8a2be2)
-![i18n](https://img.shields.io/badge/i18n-TR%20%2F%20EN-informational)
-![License](https://img.shields.io/badge/license-MIT-green)
-[![Release](https://img.shields.io/github/v/release/alpersamur3/claude-session-mover?label=exe%20indir%20%C2%B7%20download)](https://github.com/alpersamur3/claude-session-mover/releases/latest)
+![Languages](https://img.shields.io/badge/languages-English%20%7C%20Türkçe-informational)
+[![MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-**Dil / Language:  [🇹🇷 Türkçe](#tr) · [🇬🇧 English](#en)**
+[**Download for Windows**](https://github.com/alpersamur3/claude-session-mover/releases/latest) · [English guide](#english) · [Türkçe rehber](#turkce) · [Report a bug](https://github.com/alpersamur3/claude-session-mover/issues)
 
-Claude masaüstü uygulamasındaki oturumları bir hesaptan diğerine taşıyan küçük bir
-araç. İki oturum tipi desteklenir: **Claude Code** (masaüstü sohbetleri) ve
-**Cowork** (agent oturumları). Hesaplar **e-posta** ile gösterilir. /
-A small tool that moves Claude desktop sessions from one account to another.
-Two session types are supported: **Claude Code** (desktop chats) and **Cowork**
-(agent sessions). Accounts are shown by **e-mail**.
+![Account selection, session preview and four tabs](docs/gui-en.png)
 
-**Yeni / New:** Claude Code ⇄ OpenAI Codex oturum dönüştürme — bir sohbeti diğer
-ajanda kaldığı yerden sürdürün. / Convert sessions between Claude Code and OpenAI
-Codex — continue a chat in the other agent where you left off.
+| Continue in Claude or Codex | Back up sessions and project settings |
+|---|---|
+| ![Claude Code and Codex conversion](docs/bridge-en.png) | ![Expanded backup options](docs/pack-en.png) |
 
-| Dosya / File | Tür / Type | Açıklama / Description |
-|--------------|------------|------------------------|
-| [`csm.py`](csm.py)   | Terminal (CLI)   | Soru-cevap akışı / Interactive prompts |
-| [`csmui.py`](csmui.py) | Tkinter (GUI)  | Liste, önizleme, boyut karşılaştırması / List, preview, size compare |
-| [`csbridge.py`](csbridge.py) | Ortak / Shared | Claude Code ⇄ Codex dönüştürme / conversion |
-| [`cspack.py`](cspack.py) | Ortak / Shared | Yedek paketi: dosyaya çıkar / geri yükle — backup bundle: export / restore |
-| [`i18n.py`](i18n.py)  | Ortak / Shared | TR/EN çeviriler / TR/EN translations |
-| [`build.py`](build.py) | Derleme / Build | Tek dosyalık .exe üretir / builds the standalone .exe files |
+<details>
+<summary>Türkçe arayüzü göster / Show the Turkish interface</summary>
 
-> ⚠️ **Resmî değildir / Unofficial.** Kendi sorumluluğunuzda kullanın. Use at your own risk.
+![Claude Sohbet Taşıyıcı - Türkçe arayüz](docs/gui-tr.png)
 
----
+| Cowork oturumları | Yedekleme seçenekleri |
+|---|---|
+| ![Cowork hesaplar arası taşıma](docs/cowork-tr.png) | ![Oturum verileri ve proje ayarları](docs/pack-tr.png) |
 
-<a id="tr"></a>
-## 🇹🇷 Türkçe
+</details>
 
-### Sorun: "Sohbetim diğer hesapta kaldı, bu hesapta görünmüyor"
+All screenshots use bundled demo data. / Tüm görseller uygulamayla gelen demo verilerini kullanır.
 
-Claude masaüstü uygulaması, sohbet **listeleme kayıtlarını hesap bazında** ayrı
-klasörlerde tutar:
+> Community project, unaffiliated with Anthropic or OpenAI. Close relevant desktop apps, including tray processes, before writing session data. / Anthropic veya OpenAI ile bağlantısı olmayan topluluk projesidir. Oturum verilerine yazmadan önce ilgili uygulamaları sistem tepsisi dahil tamamen kapatın.
 
-```
-<base>\<hesap-id>\<workspace-id>\local_<uuid>.json
-```
+<a id="english"></a>
+<details open>
+<summary><strong>English - installation, features and usage</strong></summary>
 
-Uygulama yalnızca **o an giriş yapılı hesabın** klasörünü okur. Başka bir hesapta
-açılmış sohbet bu yüzden listede görünmez — ama **silinmemiştir**.
+## Get started
 
-- **Sohbet metni (transkript)** `~/.claude/projects\...\<cliSessionId>.jsonl` altında,
-  **ortaktır ve hesaba bağlı değildir.**
-- Hesaba bağlı olan tek şey **listeleme kaydı** (`local_*.json`).
+Download `ClaudeSessionMover.exe` from the [latest release](https://github.com/alpersamur3/claude-session-mover/releases/latest). No Python installation is needed for the Windows executable. `csm.exe` is the optional terminal version. The executables are unsigned; Windows may display an unknown-publisher warning. The first launch extracts the app into a temporary folder.
 
-Bu araç sadece o küçük listeleme kaydını hedef hesaba kopyalar.
+1. Sign in to each Claude account at least once so its local account folder exists.
+2. Fully quit Claude, including other profile windows and the tray process. Also quit Codex when importing into it.
+3. Open **Claude Code** or **Cowork**, choose the source account and select sessions.
+4. Choose the target account explicitly. Review conflicts and size comparisons before replacing a session.
+5. Reopen Claude under the target account. Use **Refresh** in the mover after account or session changes.
 
-Kayıt dosyasının iki kilit alanı:
-- `sessionId` → `local_<uuid>` (dosya adıyla **aynıdır**)
-- `cliSessionId` → asıl transkript `.jsonl` dosyasını işaret eder
+This tool handles **local Claude Code and Cowork sessions**. It does not transfer cloud-only Claude web conversations or switch your signed-in account.
 
-### İki oturum tipi
+## Four tabs
 
-| Tip | Depo klasörü | Taşınan |
-|-----|--------------|---------|
-| **Claude Code** | `claude-code-sessions` | `local_*.json` kaydı |
-| **Cowork** | `local-agent-mode-sessions` | `local_*.json` kaydı **+ yanındaki `local_<uuid>/` klasörü** (audit, outputs, uploads, .claude) |
+| Tab | What it does |
+|---|---|
+| **Claude Code** | Copies desktop session records between accounts; adapts account-bound transcripts when needed. |
+| **Cowork** | Copies the record and its companion folder, adapting account/workspace references. |
+| **Claude ⇄ Codex** | Creates a new session in the other agent while preserving the source. |
+| **Backup / Transfer** | Exports sessions to one `.csmpack` file and restores them on another computer or account. |
 
-- **CLI:** çalıştırınca önce **hangi tipi taşıyacağını sorar** (1 = Claude Code, 2 = Cowork).
-- **GUI:** üstte **iki sekme** vardır — her tip kendi sekmesinde.
-- **E-posta gösterimi:** hesap UUID'leri, Cowork oturumlarındaki
-  `.claude/.claude.json → oauthAccount` alanından **e-postaya** çözülür. Çözülemeyen
-  hesaplar kısa UUID ile gösterilir. Hesaplar **son aktiviteye göre** sıralanır ve
-  kaynak listesinde **hiç oturumu olmayan hesaplar gizlenir**.
+Change the interface language using the top selector. Accounts display an email when available, otherwise a shortened identifier.
 
-### Kurulum gerektirmeyen sürüm (.exe)
-Python kurmadan kullanmak için [Releases](https://github.com/alpersamur3/claude-session-mover/releases/latest)
-sayfasındaki dosyaları indir, çift tıkla — başka hiçbir şey gerekmez:
+## How transfers work
 
-| Dosya | Ne işe yarar |
-|-------|--------------|
-| `ClaudeSessionMover.exe` | Grafik arayüz (tüm sekmeler: taşıma, Claude ⇄ Codex, yedek/aktar) |
-| `csm.exe` | Terminal sürümü (`csm.exe --bridge`, `--export`, `--import <dosya>`, `--cleanup`, `--demo`) |
+Claude Desktop listing records live in `claude-code-sessions/<account>/<workspace>/local_*.json`; transcripts normally live under `~/.claude/projects/`. Cowork uses `local-agent-mode-sessions/` and a companion `local_<id>/` folder.
 
-- İlk açılışta Windows SmartScreen "bilinmeyen yayımcı" uyarısı verebilir (dosya imzalı
-  değil): **Daha fazla bilgi → Yine de çalıştır**.
-- Tek dosyalıdır, kendini geçici klasöre açtığı için ilk açılış birkaç saniye sürer.
-- Denemek için: `ClaudeSessionMover.exe --demo` (gerçek verine dokunmaz).
-- Kendin derlemek istersen: `py -m pip install -U pyinstaller` sonra `py build.py`
-  (PyInstaller **6.22+** şart; 6.16 ve öncesi bozuk exe üretiyor).
+For older Code transcripts without ownership metadata, copying the record can be sufficient. When a transcript contains `ownerAccountUuid`, the mover creates a new CLI session ID, copies the transcript and session extras, adapts ownership references and updates the target record. Cloud bridge identifiers are cleared in that target copy. **The source session stays in place.**
 
-### Gereksinim
-- **Python 3.8+** (gerçek kurulum; Microsoft Store/sandbox Python **önerilmez**).
-- GUI için **tkinter** (python.org kurulumlarında hazır gelir).
-- Ek bağımlılık yok (yalnızca standart kütüphane).
+Conflicts are identified by CLI session ID or desktop session ID. Replacing a target is a separate, explicit action; back up one you want to preserve. Writes are mirrored across detected stores, so use a custom store to restrict the destination.
 
-### Platform desteği
-- **Windows:** tam test edildi / birincil hedef.
-- **macOS / Linux:** *deneysel*. Veri klasörü otomatik denenir
-  (`~/Library/Application Support/Claude/…` ve `~/.config/Claude/…`). Bulunamazsa
-  yolu kendin ver: `CSM_BASE=/yol/claude-code-sessions` (ve gerekiyorsa
-  `CSM_PROJECTS=/yol/.claude/projects`).
-- macOS/Linux'ta `py` yerine `python3` kullan: `python3 csmui.py`.
-- `--demo` her platformda çalışır (gerçek veriye dokunmadan denemek için).
-- Hata bulursan lütfen [Issues](https://github.com/alpersamur3/claude-session-mover/issues)
-  üzerinden bildir (OS + `csm.py` tanı çıktısıyla).
+## Back up and restore
 
-### Kullanım
-Windows'ta **`py` launcher** en güvenlisidir (gerçek Python'a gider):
+In **Backup / Transfer**, select sessions and data groups, then save a `.csmpack`. To restore, open the file, review project-folder mappings and choose a target Claude account when desktop visibility is required.
+
+| Type | Supported contents, when present |
+|---|---|
+| **Claude Code** | Record, transcript, subagent transcripts/tool outputs, project memory, scratchpad, edit history, session environment, task lists and project `.claude/` definitions/settings. |
+| **Cowork** | Record plus companion folder: audit, outputs, uploads and its `.claude/` data. |
+| **Codex** | Rollout transcript plus session-specific visualizations and generated images. |
+
+- Terminal-only Code sessions can be exported without a desktop record. Selecting an account during restore creates the record.
+- Map an old project folder to its destination before restoring. Supported text paths/account references are adapted; binary contents are preserved.
+- Existing memory and project `.claude/` files are kept by default; enable overwrite to replace them.
+- Project `.claude/` includes agents, skills, commands and hook settings. Dependency/cache directories such as `node_modules`, `.git`, `venv`, `build` and `cache` are excluded. User-wide `~/.claude/CLAUDE.md` and user-wide agent/skill definitions are not bundled.
+- A bundle is an **unencrypted ZIP**, not an account or complete machine backup. It contains conversations and source paths; settings/environment files can contain private values. Review it before sharing.
+- Use **v1.2.0+** to restore the expanded session-data and project-settings groups. Older v1.1.0 bundles remain readable.
+
+## Continue in Claude or Codex
+
+The bridge creates a new session with a new ID. Text messages carry over; tool calls/results become text blocks. Individual tool/reasoning blocks are capped at 50,000 characters. Images become unsupported-block markers; encrypted reasoning is not transferred, although available summaries can be retained. Conversion does not recreate every tool's execution state.
+
+For Codex desktop visibility, enable **Add to Codex list**. The mover registers the thread in the state database and backs that database up as `state_*.sqlite.csm-bak`. Without registration, use `codex resume <id>`. For Claude desktop visibility, choose an account; without one, use `claude --resume <id>` from the project folder. Local data formats may change with desktop updates.
+
+## Cleanup and recovery
+
+**Clean broken sessions** / `--cleanup` removes records whose transcript cannot be found. For Cowork, it can also remove the companion folder. This operation has **no automatic backup**. Check your transcript root first: an incorrect path can make a valid session look missing. Review the list and save a backup before deleting.
+
+Transfer preserves its source; target overwrite and cleanup have different effects. Bundle restore preserves memory/project files by default. The Codex database backup applies specifically to database registration, not every operation.
+
+## Run from source
+
+Python **3.8+**, with Tkinter for the GUI. Runtime modules use the standard library; PyInstaller is needed only to build EXEs. Windows is the primary target; macOS/Linux are experimental. Use `python3` there, and install your distribution's Tkinter package if necessary.
 
 ```powershell
-py csmui.py            # Grafik arayüz (Türkçe)
-py csmui.py --en       # Grafik arayüz (İngilizce)
-py csm.py              # Terminal
-py csm.py --en         # Terminal (İngilizce)
+git clone https://github.com/alpersamur3/claude-session-mover.git
+cd claude-session-mover
+py csmui.py --en                # GUI
+py csm.py --en                  # Four-option CLI menu
+py csmui.py --demo --en         # Demo accounts
+py csm.py --bridge --en
+py csm.py --export --en
+py csm.py --import backup.csmpack --en
+py csm.py --cleanup --en
 ```
 
-GUI'de sağ üstten **TR/EN** dilini anında değiştirebilirsiniz.
+Demo account/session roots use `sample-data/`. Copy the repository before testing writes if you want to preserve the fixtures. External bundles can refer to other project paths: review mappings even in demo mode.
 
-**Adımlar:**
-1. **Claude masaüstü uygulamasını tamamen kapatın** (sistem tepsisinden de çıkın).
-2. Aracı çalıştırın.
-3. **Oturum tipini** seçin — CLI başta sorar; GUI'de **Claude Code / Cowork** sekmesi.
-4. **Kaynak hesabı** seçin (e-posta ile listelenir) → oturumlar listelenir.
-5. Taşımak istediğiniz oturum(lar)ı seçin.
-6. **Hedef hesabı** seçin (kaynak listede çıkmaz; GUI'de **hedef otomatik seçilmez**,
-   bilinçli seçmeniz gerekir).
-7. Taşıyın. Çakışma varsa boyutları görüp **üzerine yaz / atla** kararını verin.
-8. Claude'u yeniden açın; oturum hedef hesapta görünür (GUI'de **🔄 Yenile**).
+![English CLI menu and demo account selection](docs/cli-en.png)
 
-### Çakışma ve "üzerine yazma"
-Hedefte aynı sohbet zaten varsa araç sessizce atlamaz; uyarır ve **boyut
-karşılaştırması** gösterir. "Aynı sohbet": aynı `cliSessionId` **veya** aynı
-`sessionId` (= dosya adı).
+## Custom paths and Claude Profiles Native
 
-> Aynı dosya adı **farklı** bir sohbeti gösterebilir (örn. eski hesapta dolu sohbet
-> vs. yeni hesapta küçük bir "stub"). Bu yüzden boyutlar gösterilip onay istenir.
-
-### Deneme modu (ekran görüntüsü için)
-Repo, `sample-data/` altında **dummy hesaplar + sohbetler** içerir. Gerçek
-verinize dokunmadan arayüzü denemek/ekran görüntüsü almak için:
+Windows AppData/Store locations and standard macOS/Linux Claude roots are detected automatically. For a custom installation:
 
 ```powershell
-py csmui.py --demo
-py csm.py --demo
+$env:CSM_LANG = 'en'
+$env:CSM_BASE = 'D:\ClaudeData\claude-code-sessions'
+$env:CSM_PROJECTS = 'D:\ClaudeData\.claude\projects'
+$env:CSM_CODEX = 'D:\CodexData'   # CODEX_HOME also works
+py csmui.py
 ```
 
-Demo modu yalnızca `sample-data/` klasörünü okur/yazar. Üzerine yazma denersen
-`git restore sample-data` ile sıfırlayabilirsin.
+Multiple roots use `;` on Windows, `:` on macOS/Linux. Example: `$env:CSM_BASE = 'D:\StoreA\claude-code-sessions;D:\StoreB\claude-code-sessions'`. Assignments affect the current shell and its child processes.
 
-### Claude Code ⇄ Codex dönüştürme
-Bir oturumu **Claude Code'dan OpenAI Codex'e** ya da **Codex'ten Claude Code'a**
-dönüştürür; sohbete diğer ajanda kaldığı yerden devam edersiniz.
+[Claude Profiles Native](https://github.com/alpersamur3/claude-profiles-native) stores independent profiles outside standard AppData locations; this mover does not auto-discover those roots. Set `CSM_BASE` to the profile's **actual `claude-code-sessions` directory** and `CSM_PROJECTS` to its transcript root, then launch the mover from that shell. Close relevant Claude instances before writing and reopen the target profile afterwards. If moving into the main store, profile visibility depends on the launcher's synchronization when reopening; it is not a live shared-store update.
+
+If sessions do not appear, check account, store and transcript path, then **Refresh**. [Report bugs](https://github.com/alpersamur3/claude-session-mover/issues) with version, OS, operation and relevant diagnostics. Remove credentials/private conversation content from reports.
+
+## Build and project files
 
 ```powershell
-py csm.py --bridge     # Terminal (veya py csm.py → [3])
-py csmui.py            # GUI → "Claude ⇄ Codex" sekmesi
+py -m pip install 'pyinstaller>=6.22'
+py build.py                    # GUI + CLI
+py build.py gui                # GUI only
+py build.py cli                # CLI only
+py -m unittest discover -s tests -v
 ```
 
-| Yön | Kaynak | Hedef |
-|-----|--------|-------|
-| Claude Code → Codex | `~/.claude/projects/<proje>/<uuid>.jsonl` | `~/.codex/sessions/YYYY/MM/DD/rollout-…-<uuidv7>.jsonl` |
-| Codex → Claude Code | `~/.codex/sessions/…/rollout-*.jsonl` | `~/.claude/projects/<proje>/<uuid>.jsonl` |
+Build Windows EXEs on Windows. `build.py` requires PyInstaller 6.22+ and validates executable format with Windows `GetBinaryType`; that check does not replace a launch test.
 
-- **Kaynak değiştirilmez**; hedefte **yeni** bir oturum oluşturulur (yeni kimlikle).
-- **Mesajlar birebir** aktarılır. **Araç çağrıları/sonuçları** iki tarafta farklı
-  olduğu için Codex'in kendi Claude içe aktarıcısıyla aynı biçimde **metne** çevrilir
-  (`[external_agent_tool_call: Bash] …`, `[external_agent_tool_result] …`). Görseller
-  `[external unsupported block: image]` olur. Codex'in şifreli düşünce içeriği
-  aktarılamaz; yalnızca özetleri gelir.
-- **Codex uygulamasında görünme:** Codex masaüstü listesini `~/.codex/state_*.sqlite`
-  içindeki `threads` tablosundan okur. "Codex uygulamasının listesine de ekle"
-  seçiliyse araç oraya bir satır ekler (önce `state_*.sqlite.csm-bak` yedeği alınır)
-  ve Codex'in içe aktarma defterine (`external_agent_session_imports.json`) not düşer;
-  böylece Codex aynı oturumu ikinci kez içe aktarmaz. Seçili değilse oturum
-  `codex resume <kimlik>` ile açılır.
-- **Claude uygulamasında görünme:** Codex → Claude yönünde bir **Claude hesabı**
-  seçerseniz o hesaba `local_*.json` kaydı yazılır; seçmezseniz transkript
-  `claude --resume <kimlik>` ile (proje klasöründe) açılır.
-- İşlemden önce **Claude ve Codex uygulamalarını kapatın**.
-- Codex veri kökü farklıysa: `CODEX_HOME=<yol>` (veya `CSM_CODEX=<yol>`).
+| File | Purpose |
+|---|---|
+| [csm.py](csm.py) | Account stores, transfer and CLI |
+| [csmui.py](csmui.py) | Tkinter GUI |
+| [csbridge.py](csbridge.py) | Claude Code / Codex conversion |
+| [cspack.py](cspack.py) | Bundles and path mapping |
+| [i18n.py](i18n.py) | English / Turkish strings |
+| [build.py](build.py) | Standalone EXE build |
 
-### 📦 Yedek / Aktar (dosyaya çıkar, başka bilgisayarda yükle)
-Bir oturumu **tek dosyaya** (`.csmpack`, aslında bir zip) yedekler; o dosyayı başka
-bir bilgisayara kopyalayıp **istediğin hesaba** geri yüklersin.
+[Release history](CHANGELOG.md) · [MIT license](LICENSE). Screenshot regeneration on Windows: `py -m pip install Pillow`, then `py tools/generate_screenshots.py` (development-only dependency).
+
+</details>
+
+<a id="turkce"></a>
+<details>
+<summary><strong>Türkçe - kurulum, özellikler ve kullanım</strong></summary>
+
+## Hızlı başlangıç
+
+[Son sürümden](https://github.com/alpersamur3/claude-session-mover/releases/latest) `ClaudeSessionMover.exe` dosyasını indirip açın. Windows EXE'si için Python gerekmez; `csm.exe` terminal sürümüdür. Dosyalar imzasız olduğundan Windows yayıncı uyarısı gösterebilir. İlk açılışta uygulama geçici klasöre çıkarılır.
+
+1. Yerel klasörlerin oluşması için her Claude hesabına en az bir kez giriş yapın.
+2. Claude'u diğer profil pencereleri ve sistem tepsisi dahil tamamen kapatın. Codex'e aktarırken Codex'i de kapatın.
+3. **Claude Code** veya **Cowork** sekmesinde kaynak hesabı ve sohbetleri seçin.
+4. Hedefi seçin; mevcut sohbeti değiştirmeden önce çakışma ve boyut karşılaştırmasını inceleyin.
+5. Claude'u hedef hesapla yeniden açın. Hesap/oturum değişikliklerinden sonra taşıyıcıda **Yenile** kullanın.
+
+Araç **yerel Claude Code ve Cowork oturumlarını** taşır. Yalnızca buluttaki Claude web sohbetlerini taşımaz; giriş yaptığınız hesabı değiştirmez.
+
+## Dört sekme
+
+| Sekme | İşlev |
+|---|---|
+| **Claude Code** | Masaüstü kayıtlarını hesaplar arasında kopyalar; gerektiğinde hesaba bağlı transkriptleri uyarlar. |
+| **Cowork** | Kayıt/yan klasörü kopyalar; hesap ve workspace referanslarını uyarlar. |
+| **Claude ⇄ Codex** | Kaynağı koruyarak diğer ajanda yeni oturum oluşturur. |
+| **Yedek / Aktar** | Oturumları tek `.csmpack` dosyasına çıkarır; başka bilgisayara veya hesaba yükler. |
+
+Dili üstteki seçiciden değiştirebilirsiniz. Hesaplar bulunabildiğinde e-posta, aksi halde kısa kimlikle gösterilir.
+
+## Taşıma nasıl çalışır?
+
+Claude Desktop kayıtları `claude-code-sessions/<hesap>/<workspace>/local_*.json`, transkriptler genellikle `~/.claude/projects/` altında durur. Cowork, `local-agent-mode-sessions/` ve yanındaki `local_<kimlik>/` klasörünü kullanır.
+
+Sahiplik bilgisi olmayan eski Code oturumlarında yalnızca listeleme kaydı yeterli olabilir. `ownerAccountUuid` varsa yeni CLI oturum kimliği oluşturulur; transkript/yan dosyalar kopyalanır, sahiplik referansları uyarlanır ve hedef kayıt güncellenir. Hedefteki bulut köprü kimlikleri temizlenir. **Kaynak oturum yerinde kalır.**
+
+Çakışmalar CLI veya masaüstü oturum kimliğine göre bulunur. Hedefin üzerine yazmak ayrıca onay gerektirir; korumak istediğiniz hedefi yedekleyin. Yazma işlemleri bulunan depolara aynalanır; hedefi sınırlamak için özel depo seçin.
+
+## Yedekleme ve geri yükleme
+
+**Yedek / Aktar** sekmesinde oturumları/veri gruplarını seçip `.csmpack` kaydedin. Geri yüklerken dosyayı açın, proje eşlemelerini inceleyin; masaüstünde görünmesi için hedef hesabı seçin.
+
+| Tip | Mevcutsa dahil edilebilenler |
+|---|---|
+| **Claude Code** | Kayıt, transkript, alt ajan konuşmaları/araç çıktıları, proje belleği, scratchpad, düzenleme geçmişi, oturum ortamı, görevler, proje `.claude/` tanımları/ayarları. |
+| **Cowork** | Kayıt ve yan klasör: audit, outputs, uploads, oturuma ait `.claude/`. |
+| **Codex** | Rollout transkripti, oturuma ait görselleştirmeler ve üretilmiş resimler. |
+
+- Masaüstü kaydı olmayan terminal oturumları da paketlenir; geri yüklemede hesap seçilirse masaüstü kaydı oluşturulur.
+- Eski proje klasörünü hedefe eşleyin. Desteklenen metin yolları/hesap referansları uyarlanır; ikili içerikler korunur.
+- Aynı adlı bellek/proje `.claude/` dosyaları varsayılan olarak korunur; değiştirmek için üzerine yazmayı etkinleştirin.
+- Proje `.claude/` grubu agent, skill, komut ve hook ayarlarını içerir. `node_modules`, `.git`, `venv`, `build`, `cache` gibi bağımlılık/önbellek klasörleri atlanır. Kullanıcı genelindeki `~/.claude/CLAUDE.md` ve kullanıcı genelindeki agent/skill tanımları dahil değildir.
+- Paket **şifrelenmemiş ZIP** dosyasıdır; hesap veya tüm bilgisayar yedeği değildir. Konuşma ve kaynak yollar bulunur; ayarlar/ortam dosyaları özel değerler içerebilir. Paylaşmadan önce inceleyin.
+- Genişletilmiş oturum/proje verilerini geri yüklemek için **v1.2.0+** kullanın. v1.1.0 paketleri açılabilir.
+
+## Claude veya Codex'te devam etme
+
+Köprü yeni kimlikle yeni oturum oluşturur. Metin mesajları aktarılır; araç çağrıları/sonuçları metin bloklarına dönüşür. Her araç/düşünce bloğu 50.000 karakterle sınırlıdır. Görseller desteklenmeyen blok işaretlerine dönüşür; şifreli düşünce aktarılmaz, mevcut özetleri korunabilir. Her aracın çalışma durumu yeniden oluşturulmaz.
+
+Codex masaüstünde görünmesi için **Codex listesine ekle** seçin. Yerel state veritabanına kayıt eklenir; önce `state_*.sqlite.csm-bak` yedeği alınır. Aksi halde `codex resume <kimlik>` kullanın. Claude için hedef hesap seçin; seçilmezse proje klasöründe `claude --resume <kimlik>` kullanın. Yerel veri biçimleri uygulama güncellemeleriyle değişebilir.
+
+## Temizleme ve geri alma
+
+**Bozuk oturumları temizle** / `--cleanup`, transkripti bulunamayan kayıtları siler; Cowork'te yan klasörü de silebilir. **Otomatik yedek almaz.** Önce transkript kökünü doğrulayın: yanlış yol geçerli bir sohbeti eksik gösterebilir. Listeyi inceleyip gerekli yedeği alın.
+
+Kopyalama kaynağı korur; hedefin üzerine yazma/temizleme farklı işlemlerdir. Paket geri yükleme bellek/proje dosyalarını varsayılan olarak korur. Codex veritabanı yedeği yalnızca veritabanına kayıt ekleme işlemine aittir.
+
+## Kaynaktan çalıştırma
+
+Python **3.8+**, GUI için Tkinter gerekir. Çalışma sırasında standart kütüphane kullanılır; PyInstaller yalnızca derleme içindir. Ana hedef Windows; macOS/Linux deneysel desteklenir. Bu sistemlerde `python3` kullanın, gerekiyorsa dağıtımın Tkinter paketini kurun.
 
 ```powershell
-py csm.py --export             # Terminal (veya py csm.py → [4])
+git clone https://github.com/alpersamur3/claude-session-mover.git
+cd claude-session-mover
+py csmui.py                     # GUI
+py csm.py                       # Dört seçenekli CLI
+py csmui.py --demo              # Demo hesaplar
+py csm.py --bridge
+py csm.py --export
 py csm.py --import yedek.csmpack
-py csmui.py                    # GUI → "📦 Yedek / Aktar" sekmesi
+py csm.py --cleanup
 ```
 
-Pakete oturuma ait **her şey** girer:
+Demo hesap/oturum kökleri `sample-data/` kullanır. Veriyi korumak istiyorsanız yazma işlemlerini depo kopyasında deneyin. Dış paketler başka proje yollarına işaret edebilir; demo modunda da eşlemeleri inceleyin.
 
-| Tip | Pakete girenler |
-|-----|-----------------|
-| **Claude Code** | `local_*.json` kaydı, transkript `.jsonl`, `projects/<proje>/memory/` (hafıza dosyaları), `projects/<proje>/<oturum>/` (araç çıktıları, alt ajanlar), `%TEMP%/claude/<proje>/<oturum>/` (scratchpad, görevler) |
-| **Cowork** | `local_*.json` kaydı + yanındaki `local_<uuid>/` klasörü (audit, outputs, uploads, `.claude`) |
-| **Codex** | `rollout-*.jsonl` + `visualizations/<tarih>/<thread>/` + `generated_images/<thread>/` |
+![Türkçe CLI menüsü ve demo hesap seçimi](docs/cli-tr.png)
 
-Geri yüklerken:
-- **Yollar bu bilgisayara uyarlanır.** Kullanıcı klasörü (`C:\Users\ali` → `C:\Users\veli`),
-  `%TEMP%`, `.claude` / `.codex` kökleri ve proje klasörü adları (`C--Users-ali-Desktop-x`)
-  dosya içeriklerinde ve klasör adlarında yeniden yazılır. JSON içindeki kaçışlı
-  (`C:\\Users\\…`) biçim de kapsanır. Resim/veritabanı gibi ikili dosyalara dokunulmaz.
-- **Proje klasörü bu bilgisayarda başka yerdeyse** "Klasör eşlemesi" ile hedef klasörü
-  seçersin (CLI'de sorulur, GUI'de listeden "Klasörü değiştir…").
-- **Hedef Claude hesabını sen seçersin**; kayıt o hesaba yazılır ve hesaba bağlı
-  UUID/e-posta referansları hedefe göre düzeltilir (Cowork dahil). Hesap seçmezsen
-  yalnızca dosyalar geri yüklenir, oturum masaüstü uygulamasında görünmez.
-- **Codex oturumları** için "Codex listesine ekle" seçiliyse `state_*.sqlite` içine
-  kayıt eklenir. Aynı thread bu bilgisayarda zaten varsa **yeni kimlikle** yüklenir.
-- **Çakışma** (aynı oturum hedef hesapta zaten var) durumunda üzerine yaz / atla sorulur.
-- Aynı adlı **hafıza dosyaları** varsayılan olarak korunur; "üzerine yaz" seçeneği vardır.
+## Özel yollar ve Claude Profiles Native
 
-Notlar:
-- Scratchpad klasörleri büyük olabilir; GUI'de "Pakete eklenecekler" kutucuklarından
-  hafıza / scratchpad / araç çıktılarını hariç tutabilirsin (CLI de sorar).
-- Paket, kullanıcı-genel `~/.claude/CLAUDE.md` veya depo içindeki `.claude/` ayarlarını
-  **içermez** — bunlar oturuma değil, bilgisayara/projeye aittir.
-- Paket düz bir zip'tir; içindeki `manifest.json` neyin nereden geldiğini yazar.
+Windows AppData/Store ve standart macOS/Linux depoları otomatik aranır. Özel kurulum:
 
-### Güvenlik / Geri alma
-- Araç kaynak kaydı **kopyalar**; orijinal yerinde kalır.
-- **Üzerine yazma** hedefteki mevcut kaydı değiştirir; gerekirse önce yedek alın.
-- **Claude Code:** yalnızca `local_*.json` taşınır; transkriptlere dokunulmaz.
-- **Cowork:** `local_*.json` **ile birlikte yanındaki `local_<uuid>/` klasörü** de
-  kopyalanır (oturum verisi orada). Kaynak yine yerinde kalır. Ayrıca kopyada
-  **kaynak hesap/space UUID'leri hedefinkilerle yeniden yazılır** — transkript,
-  yan klasörde tam yola göre adlandırılmış bir klasörde tutulduğu için bu şart;
-  yoksa Claude taşınan oturumu bulamayıp **bağlamsız (boş) açar**.
-
-### Nasıl çalışır (teknik)
-- Tüm olası depo konumları taranır ve **gerçek yola (`realpath`) çözülür**:
-  - `%APPDATA%\Claude\claude-code-sessions`
-  - `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude\claude-code-sessions`
-    (MSIX/Store kurulum)
-- Yazma, fiziksel olarak benzersiz **tüm depolara aynalanır**.
-- MSIX kurulumda `%APPDATA%\Claude` paket konteynerine giden bir **symlink**'tir;
-  araç bunu çözerek doğrudan gerçek konuma yazar.
-
-### Sorun Giderme
-**"Session deposu bulunamadı"** → Büyük olasılıkla **Store/sandbox Python**
-kullanıyorsunuz; MSIX symlink'ini takip edemez. Gerçek Python ile çalıştırın:
 ```powershell
+$env:CSM_LANG = 'tr'
+$env:CSM_BASE = 'D:\ClaudeData\claude-code-sessions'
+$env:CSM_PROJECTS = 'D:\ClaudeData\.claude\projects'
+$env:CSM_CODEX = 'D:\CodexData'   # CODEX_HOME da desteklenir
 py csmui.py
-# veya tam yol:
-& "C:\Users\<sen>\AppData\Local\Programs\Python\Python312\python.exe" csmui.py
-```
-`csm.py` depo bulamazsa **tanı bilgisi** basar (hangi Python, hangi yollar).
-
-**"tkinter bulunamadı"** → GUI için tkinter gerekir; `py csmui.py` ile deneyin.
-
-**Liste güncellenmedi** → Uygulama listeyi yalnızca açılışta okur; Claude'u kapatıp
-yeniden açın.
-
-### Ekran görüntüleri
-
-Grafik arayüz (GUI):
-
-![GUI — Türkçe](docs/gui-tr.png)
-
-Terminal (CLI):
-
-![CLI — Türkçe](docs/cli-tr.png)
-
----
-
-<a id="en"></a>
-## 🇬🇧 English
-
-### Problem: "My chat is in another account and doesn't show here"
-
-The Claude desktop app stores chat **listing records per account** in separate
-folders:
-
-```
-<base>\<account-id>\<workspace-id>\local_<uuid>.json
 ```
 
-The app only reads the folder of the **currently signed-in account**. A chat opened
-under a different account therefore won't appear in the list — but it is **not
-deleted**.
+Çoklu depolar Windows'ta `;`, macOS/Linux'ta `:` ile ayrılır. Örnek: `$env:CSM_BASE = 'D:\DepoA\claude-code-sessions;D:\DepoB\claude-code-sessions'`. Atamalar mevcut terminali ve ondan başlatılan süreçleri etkiler.
 
-- The **chat transcript** lives under `~/.claude/projects\...\<cliSessionId>.jsonl`,
-  is **shared and account-independent.**
-- The only account-bound thing is the **listing record** (`local_*.json`).
+[Claude Profiles Native](https://github.com/alpersamur3/claude-profiles-native) standart AppData dışındaki profilleri kullanır; taşıyıcı bunları otomatik bulmaz. `CSM_BASE` değerini profilin **gerçek `claude-code-sessions` klasörüne**, `CSM_PROJECTS` değerini transkript köküne ayarlayıp aynı terminalden başlatın. Yazmadan önce ilgili Claude örneklerini kapatıp sonra hedef profili yeniden açın. Ana depoya taşıyorsanız görünmesi başlatıcının yeniden açılışta eşitlemesine bağlıdır; anlık ortak depo güncellemesi değildir.
 
-This tool only copies that small listing record to the target account.
+Sohbet yoksa hesap/depo/transkript yolunu kontrol edip **Yenile** kullanın. [Hata bildirirken](https://github.com/alpersamur3/claude-session-mover/issues) sürüm, sistem, işlem ve ilgili tanı çıktısını ekleyin; giriş bilgilerini/özel konuşma içeriklerini çıkartın.
 
-Two key fields of the record:
-- `sessionId` → `local_<uuid>` (**equals** the file name)
-- `cliSessionId` → points to the actual transcript `.jsonl`
-
-### Two session types
-
-| Type | Store folder | What is moved |
-|------|--------------|---------------|
-| **Claude Code** | `claude-code-sessions` | the `local_*.json` record |
-| **Cowork** | `local-agent-mode-sessions` | the `local_*.json` record **+ its sibling `local_<uuid>/` folder** (audit, outputs, uploads, .claude) |
-
-- **CLI:** on start it **asks which type to move** (1 = Claude Code, 2 = Cowork).
-- **GUI:** there are **two tabs** at the top — one per type.
-- **E-mail display:** account UUIDs are resolved to an **e-mail** from each Cowork
-  session's `.claude/.claude.json → oauthAccount`. Unresolved accounts fall back to a
-  short UUID. Accounts are **sorted by last activity**, and accounts with **no
-  sessions are hidden from the source** list.
-
-### No-install build (.exe)
-To use it without installing Python, grab the files from the
-[latest release](https://github.com/alpersamur3/claude-session-mover/releases/latest)
-and double-click — nothing else is needed:
-
-| File | What it is |
-|------|------------|
-| `ClaudeSessionMover.exe` | The GUI (all tabs: move, Claude ⇄ Codex, backup/transfer) |
-| `csm.exe` | The terminal version (`csm.exe --bridge`, `--export`, `--import <file>`, `--cleanup`, `--demo`) |
-
-- On first launch Windows SmartScreen may warn about an unknown publisher (the file is
-  not signed): **More info → Run anyway**.
-- It is a single file that unpacks itself to a temp folder, so the first start takes a
-  few seconds.
-- Try it safely with `ClaudeSessionMover.exe --demo` (it never touches your real data).
-- To build it yourself: `py -m pip install -U pyinstaller`, then `py build.py`
-  (PyInstaller **6.22+** is required; 6.16 and older produce broken exes).
-
-### Requirements
-- **Python 3.8+** (a real install; Microsoft Store/sandbox Python **not recommended**).
-- **tkinter** for the GUI (bundled with python.org installers).
-- No extra dependencies (standard library only).
-
-### Platform support
-- **Windows:** fully tested / primary target.
-- **macOS / Linux:** *experimental*. The data folder is auto-detected
-  (`~/Library/Application Support/Claude/…` and `~/.config/Claude/…`). If not found,
-  point it manually: `CSM_BASE=/path/claude-code-sessions` (and
-  `CSM_PROJECTS=/path/.claude/projects` if transcripts live elsewhere).
-- On macOS/Linux use `python3` instead of `py`: `python3 csmui.py`.
-- `--demo` works on every platform (to try it without touching real data).
-- Found a bug? Please report via [Issues](https://github.com/alpersamur3/claude-session-mover/issues)
-  (include your OS and the `csm.py` diagnostics output).
-
-### Usage
-On Windows the **`py` launcher** is safest (uses a real Python):
+## Derleme ve proje dosyaları
 
 ```powershell
-py csmui.py            # GUI (Turkish)
-py csmui.py --en       # GUI (English)
-py csm.py              # CLI
-py csm.py --en         # CLI (English)
+py -m pip install 'pyinstaller>=6.22'
+py build.py                    # GUI + CLI
+py build.py gui                # Yalnızca GUI
+py build.py cli                # Yalnızca CLI
+py -m unittest discover -s tests -v
 ```
 
-In the GUI you can switch **TR/EN** instantly from the top-right.
+Windows EXE'sini Windows üzerinde derleyin. `build.py`, PyInstaller 6.22+ ister ve Windows `GetBinaryType` ile dosya biçimini doğrular; bu kontrol açılış testinin yerine geçmez.
 
-**Steps:**
-1. **Fully close the Claude desktop app** (quit from the system tray too).
-2. Run the tool.
-3. Choose the **session type** — the CLI asks first; the GUI has a
-   **Claude Code / Cowork** tab.
-4. Select the **source account** (listed by e-mail) → sessions are listed.
-5. Select the session(s) to move.
-6. Select the **target account** (the source is excluded; in the GUI the target is
-   **not auto-selected** — you must pick it deliberately).
-7. Move. On conflicts, review sizes and choose **overwrite / skip**.
-8. Reopen Claude; the session appears in the target account (in the GUI click **🔄 Refresh**).
+`csm.py`: taşıma/CLI · `csmui.py`: arayüz · `csbridge.py`: köprü · `cspack.py`: paketler · `i18n.py`: TR/EN · `build.py`: derleme.
 
-### Conflicts and "overwrite"
-If the same chat already exists in the target, the tool does not skip silently; it
-warns and shows a **size comparison**. "Same chat" means the same `cliSessionId`
-**or** the same `sessionId` (= file name).
+[Sürüm geçmişi](CHANGELOG.md) · [MIT lisansı](LICENSE). Windows'ta görselleri yenileme: `py -m pip install Pillow`, ardından `py tools/generate_screenshots.py` (yalnızca geliştirme bağımlılığı).
 
-> The same file name may point to a **different** chat (e.g. a full chat in the old
-> account vs. a small "stub" in the new one). That's why sizes are shown before you
-> confirm.
-
-### Demo mode (for screenshots)
-The repo ships **dummy accounts + chats** under `sample-data/`. To try the UI / take
-screenshots without touching your real data:
-
-```powershell
-py csmui.py --demo
-py csm.py --demo
-```
-
-Demo mode only reads/writes `sample-data/`. If you test an overwrite, reset it with
-`git restore sample-data`.
-
-### Claude Code ⇄ Codex conversion
-Converts a session **from Claude Code to OpenAI Codex** or **from Codex to Claude
-Code**, so you can continue the chat in the other agent where you left off.
-
-```powershell
-py csm.py --bridge     # Terminal (or py csm.py → [3])
-py csmui.py            # GUI → "Claude ⇄ Codex" tab
-```
-
-| Direction | Source | Target |
-|-----------|--------|--------|
-| Claude Code → Codex | `~/.claude/projects/<project>/<uuid>.jsonl` | `~/.codex/sessions/YYYY/MM/DD/rollout-…-<uuidv7>.jsonl` |
-| Codex → Claude Code | `~/.codex/sessions/…/rollout-*.jsonl` | `~/.claude/projects/<project>/<uuid>.jsonl` |
-
-- **The source is never modified**; a **new** session (with a new id) is created on the target.
-- **Messages carry over verbatim.** **Tool calls/results** differ between the two
-  agents, so they are turned into **text** in the same format Codex's own Claude
-  importer uses (`[external_agent_tool_call: Bash] …`, `[external_agent_tool_result] …`).
-  Images become `[external unsupported block: image]`. Codex's encrypted reasoning
-  can't be carried over; only its summaries are.
-- **Showing up in the Codex app:** the Codex desktop app reads its list from the
-  `threads` table in `~/.codex/state_*.sqlite`. With "Also add to the Codex app's list"
-  enabled, the tool inserts a row there (after backing it up to
-  `state_*.sqlite.csm-bak`) and records the import in Codex's import ledger
-  (`external_agent_session_imports.json`) so Codex won't import the same session a
-  second time. Otherwise open it with `codex resume <id>`.
-- **Showing up in the Claude app:** in the Codex → Claude direction, pick a **Claude
-  account** to write a `local_*.json` record for it; otherwise open the transcript
-  with `claude --resume <id>` (from the project folder).
-- **Close the Claude and Codex apps** before converting.
-- Custom Codex data root: `CODEX_HOME=<path>` (or `CSM_CODEX=<path>`).
-
-### 📦 Backup / Transfer (export to a file, restore on another computer)
-Backs a session up into **a single file** (`.csmpack`, really a zip) that you can copy
-to another computer and restore **into any account you choose**.
-
-```powershell
-py csm.py --export             # Terminal (or py csm.py → [4])
-py csm.py --import backup.csmpack
-py csmui.py                    # GUI → "📦 Backup / Transfer" tab
-```
-
-**Everything** belonging to the session goes in:
-
-| Type | What is bundled |
-|------|-----------------|
-| **Claude Code** | the `local_*.json` record, the `.jsonl` transcript, `projects/<project>/memory/` (memory files), `projects/<project>/<session>/` (tool outputs, subagents), `%TEMP%/claude/<project>/<session>/` (scratchpad, tasks) |
-| **Cowork** | the `local_*.json` record + its `local_<uuid>/` folder (audit, outputs, uploads, `.claude`) |
-| **Codex** | `rollout-*.jsonl` + `visualizations/<date>/<thread>/` + `generated_images/<thread>/` |
-
-On restore:
-- **Paths are adapted to this computer.** The home folder (`C:\Users\ann` → `C:\Users\bob`),
-  `%TEMP%`, the `.claude` / `.codex` roots and project folder names (`C--Users-ann-Desktop-x`)
-  are rewritten inside file contents and in file/folder names, including the
-  JSON-escaped form (`C:\\Users\\…`). Binary files (images, databases) are left alone.
-- **If the project folder lives elsewhere here**, set the target with "Folder mapping"
-  (the CLI asks; the GUI has "Change folder…").
-- **You pick the target Claude account**; the record is written there and account-bound
-  UUID/e-mail references are rewritten for it (Cowork included). Without an account only
-  the files are restored and the session won't appear in the desktop app.
-- For **Codex sessions**, "Add to the Codex list" inserts a row into `state_*.sqlite`.
-  If that thread already exists here, it is imported **under a new id**.
-- On a **conflict** (the session already exists in the target account) you are asked to
-  overwrite or skip.
-- Existing **memory files** are kept by default; there is an "overwrite" option.
-
-Notes:
-- Scratchpad folders can be large; the GUI's "Include in the bundle" checkboxes let you
-  leave out memory / scratchpad / tool outputs (the CLI asks too).
-- The bundle does **not** include the user-wide `~/.claude/CLAUDE.md` or a repo's
-  `.claude/` settings — those belong to the machine/project, not to the session.
-- The bundle is a plain zip; its `manifest.json` records where everything came from.
-
-### Safety / Undo
-- The tool **copies** the source record; the original stays in place.
-- **Overwrite** replaces the existing target record; back it up first if unsure.
-- **Claude Code:** only `local_*.json` is moved; transcripts are never touched.
-- **Cowork:** the `local_*.json` **and its sibling `local_<uuid>/` folder** are copied
-  (the session data lives there). The source still stays in place. The copy also has
-  its **source account/space UUIDs rewritten to the target's** — the transcript is
-  stored in a folder named after its full path, so without this Claude can't find the
-  moved session and **opens it empty (no context)**.
-
-### How it works (technical)
-- All candidate store locations are scanned and **resolved to their real path
-  (`realpath`)**:
-  - `%APPDATA%\Claude\claude-code-sessions`
-  - `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude\claude-code-sessions`
-    (MSIX/Store install)
-- Writes are **mirrored to every physically-unique store**.
-- On MSIX installs `%APPDATA%\Claude` is a **symlink** into the package container; the
-  tool resolves it and writes to the real location directly.
-
-### Troubleshooting
-**"No session store found"** → You are most likely using a **Store/sandbox Python**
-that cannot follow the MSIX symlink. Run with a real Python:
-```powershell
-py csmui.py
-# or full path:
-& "C:\Users\<you>\AppData\Local\Programs\Python\Python312\python.exe" csmui.py
-```
-If `csm.py` finds no store it prints **diagnostics** (which Python, which paths).
-
-**"tkinter not found"** → The GUI needs tkinter; try `py csmui.py`.
-
-**List didn't update** → The app reads the list only at startup; close and reopen Claude.
-
-### Screenshots
-
-Graphical interface (GUI):
-
-![GUI — English](docs/gui-en.png)
-
-Terminal (CLI):
-
-![CLI — English](docs/cli-en.png)
-
----
-
-## Lisans / License
-
-[MIT](LICENSE)
+</details>

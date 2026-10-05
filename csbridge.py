@@ -125,7 +125,7 @@ def _claude_first_cwd(path, max_lines=50):
 
 
 # -------------------------------------------------------------------
-# ZAMAN / KİMLİK — TIME / IDS
+# ZAMAN / KİMLİK - TIME / IDS
 # -------------------------------------------------------------------
 
 _ISO_RE = re.compile(r"(\d{4})-(\d\d)-(\d\d)[T ](\d\d):(\d\d):(\d\d)(?:\.(\d+))?")
@@ -682,7 +682,7 @@ def list_codex_sessions():
 
 
 # -------------------------------------------------------------------
-# SÜRÜM / ŞABLON TESPİTİ — VERSION / TEMPLATE DETECTION
+# SÜRÜM / ŞABLON TESPİTİ - VERSION / TEMPLATE DETECTION
 # -------------------------------------------------------------------
 
 def _newest(paths, n):

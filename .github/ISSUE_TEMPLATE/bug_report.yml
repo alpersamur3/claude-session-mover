@@ -7,6 +7,14 @@ body:
       value: |
         Thanks for reporting! / Bildirdiğin için teşekkürler!
         Please fill in the details below. / Lütfen aşağıdaki bilgileri doldur.
+  - type: input
+    id: version
+    attributes:
+      label: Tool version / Uygulama sürümü
+      description: Release tag or source commit / Release etiketi veya kaynak commit
+      placeholder: v1.2.0
+    validations:
+      required: true
   - type: dropdown
     id: os
     attributes:
@@ -25,14 +33,30 @@ body:
       description: "`python --version` / `py --version`"
       placeholder: "3.12.x"
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: tool
     attributes:
       label: Which tool / Hangi araç
       options:
+        - "ClaudeSessionMover.exe (GUI)"
+        - "csm.exe (CLI)"
         - "csmui.py (GUI)"
         - "csm.py (CLI)"
+    validations:
+      required: true
+  - type: dropdown
+    id: operation
+    attributes:
+      label: Operation / İşlem
+      options:
+        - "Claude Code account transfer / hesaplar arası taşıma"
+        - "Cowork account transfer / hesaplar arası taşıma"
+        - "Claude ⇄ Codex"
+        - "Bundle export / paket oluşturma"
+        - "Bundle restore / paket geri yükleme"
+        - "Cleanup / temizleme"
+        - "Store detection or startup / depo bulma veya açılış"
     validations:
       required: true
   - type: textarea
@@ -55,4 +79,7 @@ body:
     id: extra
     attributes:
       label: Anything else / Ek bilgi
-      description: Screenshots, logs, store path, etc. / Ekran görüntüsü, günlük, depo yolu vb.
+      description: >
+        Screenshots, logs, store path. Remove credentials and private conversation
+        content before sharing. / Görseller, günlükler, depo yolu. Paylaşmadan önce
+        giriş bilgilerini ve özel konuşma içeriklerini çıkartın.
