@@ -131,6 +131,8 @@ Multiple roots use `;` on Windows, `:` on macOS/Linux. Example: `$env:CSM_BASE =
 
 [Claude Profiles Native](https://github.com/alpersamur3/claude-profiles-native) stores independent profiles outside standard AppData locations; this mover does not auto-discover those roots. Set `CSM_BASE` to the profile's **actual `claude-code-sessions` directory** and `CSM_PROJECTS` to its transcript root, then launch the mover from that shell. Close relevant Claude instances before writing and reopen the target profile afterwards. If moving into the main store, profile visibility depends on the launcher's synchronization when reopening; it is not a live shared-store update.
 
+A profile store may contain only one account. To transfer between accounts, use a main store containing both accounts, or export a bundle from the source profile and restore it into the target profile after changing the roots. Multiple `CSM_BASE` paths mirror writes; they do not combine the account lists.
+
 If sessions do not appear, check account, store and transcript path, then **Refresh**. [Report bugs](https://github.com/alpersamur3/claude-session-mover/issues) with version, OS, operation and relevant diagnostics. Remove credentials/private conversation content from reports.
 
 ## Build and project files
@@ -257,6 +259,8 @@ py csmui.py
 Çoklu depolar Windows'ta `;`, macOS/Linux'ta `:` ile ayrılır. Örnek: `$env:CSM_BASE = 'D:\DepoA\claude-code-sessions;D:\DepoB\claude-code-sessions'`. Atamalar mevcut terminali ve ondan başlatılan süreçleri etkiler.
 
 [Claude Profiles Native](https://github.com/alpersamur3/claude-profiles-native) standart AppData dışındaki profilleri kullanır; taşıyıcı bunları otomatik bulmaz. `CSM_BASE` değerini profilin **gerçek `claude-code-sessions` klasörüne**, `CSM_PROJECTS` değerini transkript köküne ayarlayıp aynı terminalden başlatın. Yazmadan önce ilgili Claude örneklerini kapatıp sonra hedef profili yeniden açın. Ana depoya taşıyorsanız görünmesi başlatıcının yeniden açılışta eşitlemesine bağlıdır; anlık ortak depo güncellemesi değildir.
+
+Bir profil deposunda yalnızca tek hesap olabilir. Hesaplar arası taşıma için iki hesabın bulunduğu ana depoyu kullanın veya kaynak profilden paket çıkarıp kökleri değiştirerek hedef profile yükleyin. Çoklu `CSM_BASE` yolları yazmayı aynalar; hesap listelerini birleştirmez.
 
 Sohbet yoksa hesap/depo/transkript yolunu kontrol edip **Yenile** kullanın. [Hata bildirirken](https://github.com/alpersamur3/claude-session-mover/issues) sürüm, sistem, işlem ve ilgili tanı çıktısını ekleyin; giriş bilgilerini/özel konuşma içeriklerini çıkartın.
 
