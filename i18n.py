@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Ortak çeviri (i18n) modülü — csm.py ve csmui.py tarafından kullanılır.
+Ortak çeviri (i18n) modülü - csm.py ve csmui.py tarafından kullanılır.
 Shared translation module used by both csm.py and csmui.py.
 
 Kullanım / Usage:
@@ -29,16 +29,16 @@ T = {
     "type_cowork":      {"tr": "Cowork", "en": "Cowork"},
     "choose_type":      {"tr": "=== TAŞINACAK SESSION TİPİNİ SEÇ ===",
                           "en": "=== SELECT SESSION TYPE TO MOVE ==="},
-    "type_opt_code":    {"tr": "  [1] Claude Code — masaüstü sohbetleri",
-                          "en": "  [1] Claude Code — desktop chats"},
-    "type_opt_cowork":  {"tr": "  [2] Cowork — agent oturumları",
-                          "en": "  [2] Cowork — agent sessions"},
+    "type_opt_code":    {"tr": "  [1] Claude Code - masaüstü sohbetleri",
+                          "en": "  [1] Claude Code - desktop chats"},
+    "type_opt_cowork":  {"tr": "  [2] Cowork - agent oturumları",
+                          "en": "  [2] Cowork - agent sessions"},
     "type_bridge":      {"tr": "Claude ⇄ Codex", "en": "Claude ⇄ Codex"},
-    "type_opt_bridge":  {"tr": "  [3] Claude Code ⇄ Codex — oturum dönüştür",
-                          "en": "  [3] Claude Code ⇄ Codex — convert sessions"},
+    "type_opt_bridge":  {"tr": "  [3] Claude Code ⇄ Codex - oturum dönüştür",
+                          "en": "  [3] Claude Code ⇄ Codex - convert sessions"},
     "type_pack":        {"tr": "📦 Yedek / Aktar", "en": "📦 Backup / Transfer"},
-    "type_opt_pack":    {"tr": "  [4] 📦 Yedek / Aktar — dosyaya yedekle, başka bilgisayarda geri yükle",
-                          "en": "  [4] 📦 Backup / Transfer — save to a file, restore on another computer"},
+    "type_opt_pack":    {"tr": "  [4] 📦 Yedek / Aktar - dosyaya yedekle, başka bilgisayarda geri yükle",
+                          "en": "  [4] 📦 Backup / Transfer - save to a file, restore on another computer"},
     "prompt_type":      {"tr": "Tip no (1/2/3/4): ", "en": "Type no (1/2/3/4): "},
     "type_active":      {"tr": "Seçilen tip: {name}", "en": "Selected type: {name}"},
 
@@ -124,7 +124,7 @@ T = {
     "g_lang":           {"tr": "Dil:", "en": "Lang:"},
     "g_source":         {"tr": "Kaynak hesap:", "en": "Source account:"},
     "g_target":         {"tr": "Hedef hesap:", "en": "Target account:"},
-    "g_target_ph":      {"tr": "— Hedef hesap seçin —", "en": "— Select target account —"},
+    "g_target_ph":      {"tr": " -  Hedef hesap seçin  - ", "en": " -  Select target account  - "},
     "g_filter":         {"tr": "🔍 Filtre:", "en": "🔍 Filter:"},
     "g_col_title":      {"tr": "Başlık", "en": "Title"},
     "g_col_folder":     {"tr": "Klasör", "en": "Folder"},
@@ -148,8 +148,8 @@ T = {
     "g_ready":          {"tr": "Hazır.", "en": "Ready."},
     "g_status_loaded":  {"tr": "{a} hesap • {b} fiziksel depo", "en": "{a} accounts • {b} physical stores"},
     "g_no_store_short": {"tr": "HİÇBİR DEPO BULUNAMADI", "en": "NO STORE FOUND"},
-    "g_no_store_status":{"tr": "Depo yok — gerçek Python ile çalıştırın: py csmui.py",
-                          "en": "No store — run with real Python: py csmui.py"},
+    "g_no_store_status":{"tr": "Depo yok - gerçek Python ile çalıştırın: py csmui.py",
+                          "en": "No store - run with real Python: py csmui.py"},
     "g_loaded":         {"tr": "[ok] {nb} depo, {na} hesap yüklendi.",
                           "en": "[ok] loaded {nb} store(s), {na} account(s)."},
     "g_need_two":       {"tr": "[uyarı] Taşıma için 2 hesap gerekli, bulunan: {n}",
@@ -164,8 +164,8 @@ T = {
     "d_transcript":     {"tr": "transkript", "en": "transcript"},
 
     # GUI çakışma penceresi / conflict dialog
-    "cd_title":         {"tr": "Çakışma — sohbet hedefte zaten var",
-                          "en": "Conflict — chat already exists in target"},
+    "cd_title":         {"tr": "Çakışma - sohbet hedefte zaten var",
+                          "en": "Conflict - chat already exists in target"},
     "cd_header":        {"tr": "⚠  Bu sohbet hedef hesapta zaten var",
                           "en": "⚠  This chat already exists in the target account"},
     "cd_chat_size":     {"tr": "Sohbet boyutu", "en": "Chat size"},
@@ -269,8 +269,8 @@ T = {
                              "en": "Also add to the Codex app's chat list? (y/n): "},
     "br_account_hdr":   {"tr": "=== CLAUDE MASAÜSTÜ HESABI (isteğe bağlı) ===",
                           "en": "=== CLAUDE DESKTOP ACCOUNT (optional) ==="},
-    "br_account_none":  {"tr": "  [0] Kaydetme — yalnızca transkript (claude --resume ile açılır)",
-                          "en": "  [0] Don't register — transcript only (open with claude --resume)"},
+    "br_account_none":  {"tr": "  [0] Kaydetme - yalnızca transkript (claude --resume ile açılır)",
+                          "en": "  [0] Don't register - transcript only (open with claude --resume)"},
     "br_prompt_account":{"tr": "Hesap no (0 = kaydetme): ", "en": "Account no (0 = don't register): "},
     "br_no_account_warn": {"tr": "Claude hesabı seçilmedi: oturum Claude MASAÜSTÜ uygulamasında GÖRÜNMEZ,\n"
                                  "yalnızca terminalde `claude --resume <kimlik>` ile açılır.",
@@ -280,13 +280,13 @@ T = {
                                    "yalnızca terminalde `codex resume <kimlik>` ile açılır.",
                               "en": "Not adding to the Codex list: the session will NOT appear in the Codex DESKTOP app,\n"
                                    "it can only be opened in a terminal with `codex resume <id>`."},
-    "br_summary":       {"tr": "=== ÖZET: {dir} — {n} oturum ===", "en": "=== SUMMARY: {dir} — {n} session(s) ==="},
+    "br_summary":       {"tr": "=== ÖZET: {dir} - {n} oturum ===", "en": "=== SUMMARY: {dir} - {n} session(s) ==="},
     "br_ok":            {"tr": "[ok] {title}\n        -> {p}\n        kimlik: {id}  ({turns} tur, {items} mesaj)",
                           "en": "[ok] {title}\n        -> {p}\n        id: {id}  ({turns} turns, {items} messages)"},
     "br_reg_codex_yes": {"tr": "        Codex uygulamasının listesine eklendi.",
                           "en": "        Added to the Codex app's list."},
-    "br_reg_codex_no":  {"tr": "        Codex listesine eklenmedi — `codex resume {id}` ile açılabilir.",
-                          "en": "        Not added to the Codex list — open with `codex resume {id}`."},
+    "br_reg_codex_no":  {"tr": "        Codex listesine eklenmedi - `codex resume {id}` ile açılabilir.",
+                          "en": "        Not added to the Codex list - open with `codex resume {id}`."},
     "br_reg_claude":    {"tr": "        Claude hesabına kaydedildi ({n} depo).",
                           "en": "        Registered to the Claude account ({n} store(s))."},
     "br_fail":          {"tr": "[!] {title}: {e}", "en": "[!] {title}: {e}"},
@@ -308,7 +308,7 @@ T = {
     "g_br_reg_codex":   {"tr": "Codex uygulamasının listesine de ekle",
                           "en": "Also add to the Codex app's list"},
     "g_br_reg_claude":  {"tr": "Claude hesabına kaydet:", "en": "Register to Claude account:"},
-    "g_br_reg_none":    {"tr": "— Kaydetme (yalnızca transkript) —", "en": "— Don't register (transcript only) —"},
+    "g_br_reg_none":    {"tr": " -  Kaydetme (yalnızca transkript)  - ", "en": " -  Don't register (transcript only)  - "},
     "g_br_convert_btn": {"tr": "Seçili oturum(ları) dönüştür  →", "en": "Convert selected session(s)  →"},
     "g_br_loaded":      {"tr": "[ok] {nc} Claude Code, {nx} Codex oturumu bulundu.",
                           "en": "[ok] found {nc} Claude Code and {nx} Codex sessions."},
@@ -333,18 +333,31 @@ T = {
     "pk_opt_export":    {"tr": "  [1] Dosyaya aktar (yedek)", "en": "  [1] Export to a file (backup)"},
     "pk_opt_import":    {"tr": "  [2] Dosyadan geri yükle", "en": "  [2] Restore from a file"},
     "pk_prompt_mode":   {"tr": "Seçim (1/2): ", "en": "Choice (1/2): "},
-    "pk_about":         {"tr": "Oturumun her şeyi pakete girer: kayıt, transkript, hafıza dosyaları,\n"
-                               "scratchpad, araç çıktıları, Cowork yan klasörü, Codex görselleri.",
-                          "en": "Everything belonging to a session goes into the bundle: record, transcript,\n"
-                               "memory files, scratchpad, tool outputs, Cowork folder, Codex images."},
+    "pk_about":         {"tr": "Desteklenen oturum verilerini tek pakete yedekleyin: kayıt, transkript, hafıza,\n"
+                               "alt ajan transkriptleri, araç çıktıları, scratchpad, dosya geçmişi,\n"
+                               "görev listesi, Cowork yan klasörü, Codex görselleri.",
+                          "en": "Back up supported session data in one bundle: record, transcript,\n"
+                               "memory files, subagent transcripts, tool outputs, scratchpad, file history,\n"
+                               "task list, Cowork folder, Codex images."},
     "pk_no_sessions":   {"tr": "Paketlenecek oturum bulunamadı.", "en": "No sessions found to bundle."},
     "pk_list_hdr":      {"tr": "=== OTURUMLAR ({n}) ===", "en": "=== SESSIONS ({n}) ==="},
     "pk_line":          {"tr": "  [{i}] {kind} · {title}{acc}\n       klasör: {cwd}   son: {t}   boyut: {size}",
                           "en": "  [{i}] {kind} · {title}{acc}\n       folder: {cwd}   last: {t}   size: {size}"},
     "pk_prompt_pick":   {"tr": "Paketlenecek oturum no(ları) (virgülle birden fazla): ",
                           "en": "Session no(s) to bundle (comma-separated for multiple): "},
-    "pk_all_q":         {"tr": "Hafıza, scratchpad ve araç çıktıları da eklensin mi? (e/h): ",
-                          "en": "Include memory, scratchpad and tool outputs too? (y/n): "},
+    "pk_all_q":         {"tr": "Hafıza, scratchpad, alt ajanlar, dosya geçmişi ve görevler de "
+                               "eklensin mi? (e/h): ",
+                          "en": "Include memory, scratchpad, subagents, file history and tasks "
+                               "too? (y/n): "},
+    "pk_project_q":     {"tr": "Projenin .claude/ klasörü (agent, skill, komut tanımları) da "
+                               "eklensin mi? (e/h): ",
+                          "en": "Include the project's .claude/ folder (agents, skills, commands) "
+                               "too? (y/n): "},
+    "pk_overwrite_q":   {"tr": "Hedefte aynı adlı hafıza / .claude dosyaları varsa üzerine "
+                               "yazılsın mı? (e/h): ",
+                          "en": "Overwrite memory / .claude files that already exist? (y/n): "},
+    "pk_project_skipped": {"tr": "        {n} proje dosyası korundu (hedefte zaten vardı)",
+                            "en": "        {n} project file(s) kept (already existed on the target)"},
     "pk_out_q":         {"tr": "Paket dosyası [{d}]: ", "en": "Bundle file [{d}]: "},
     "pk_exporting":     {"tr": "Paketleniyor… ({size} civarı)", "en": "Bundling… (about {size})"},
     "pk_export_done":   {"tr": "Paket hazır: {p}  ({size})", "en": "Bundle ready: {p}  ({size})"},
@@ -379,17 +392,20 @@ T = {
     "g_pk_mode":        {"tr": "İşlem:", "en": "Action:"},
     "g_pk_mode_export": {"tr": "Dosyaya aktar (yedek)", "en": "Export to a file (backup)"},
     "g_pk_mode_import": {"tr": "Dosyadan geri yükle", "en": "Restore from a file"},
-    "g_pk_info":        {"tr": "Oturumun her şeyi tek dosyaya girer: kayıt, transkript, hafıza, scratchpad, "
-                               "araç çıktıları, Cowork klasörü, Codex görselleri. Geri yüklerken yollar bu "
-                               "bilgisayara uyarlanır.",
-                          "en": "Everything goes into one file: record, transcript, memory, scratchpad, tool "
-                               "outputs, Cowork folder, Codex images. On restore, paths are adapted to this "
-                               "computer."},
+    "g_pk_info":        {"tr": "Seçili oturumları ve veri gruplarını tek dosyaya yedekleyin. "
+                               "Geri yüklerken hedef hesabı ve proje klasörlerini seçin.",
+                          "en": "Back up selected sessions and data groups in one file. "
+                               "Choose the target account and project folders when restoring."},
     "g_col_kind":       {"tr": "Tip", "en": "Type"},
     "g_pk_parts":       {"tr": " Pakete eklenecekler ", "en": " Include in the bundle "},
     "g_pk_part_memory": {"tr": "Hafıza dosyaları (memory/)", "en": "Memory files (memory/)"},
-    "g_pk_part_scratch": {"tr": "Scratchpad ve görevler", "en": "Scratchpad and tasks"},
-    "g_pk_part_extras": {"tr": "Araç çıktıları / alt ajanlar", "en": "Tool outputs / subagents"},
+    "g_pk_part_scratch": {"tr": "Scratchpad ve arka plan görevleri", "en": "Scratchpad and background tasks"},
+    "g_pk_part_extras": {"tr": "Araç çıktıları ve alt ajan transkriptleri",
+                          "en": "Tool outputs and subagent transcripts"},
+    "g_pk_part_session": {"tr": "Dosya geçmişi, görev listesi, oturum ortamı",
+                           "en": "File history, task list, session environment"},
+    "g_pk_part_project": {"tr": "Proje .claude/ klasörü (agent, skill, komut)",
+                           "en": "Project .claude/ folder (agents, skills, commands)"},
     "g_pk_size":        {"tr": "Seçili: {n} oturum  •  yaklaşık {size}",
                           "en": "Selected: {n} session(s)  •  about {size}"},
     "g_pk_save_btn":    {"tr": "Dosyaya kaydet…  →", "en": "Save to file…  →"},
@@ -401,7 +417,8 @@ T = {
     "g_pk_account":     {"tr": "Claude hesabı:", "en": "Claude account:"},
     "g_pk_reg_codex":   {"tr": "Codex oturumlarını Codex listesine ekle",
                           "en": "Add Codex sessions to the Codex list"},
-    "g_pk_overwrite_mem": {"tr": "Hafıza dosyalarının üzerine yaz", "en": "Overwrite memory files"},
+    "g_pk_overwrite_mem": {"tr": "Var olan hafıza ve .claude dosyalarının üzerine yaz",
+                            "en": "Overwrite existing memory and .claude files"},
     "g_pk_map":         {"tr": " Klasör eşlemesi ", "en": " Folder mapping "},
     "g_pk_map_src":     {"tr": "Paketteki klasör", "en": "Folder in the bundle"},
     "g_pk_map_dst":     {"tr": "Bu bilgisayarda", "en": "On this computer"},

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Claude Sohbet Taşıyıcı — Tkinter Arayüzü (csmui.py)  /  Claude Chat Mover — GUI
+Claude Sohbet Taşıyıcı - Tkinter Arayüzü (csmui.py)  /  Claude Chat Mover - GUI
 ==============================================================================
-csm.py'nin grafik arayüzlü sürümü. İki sekme:
+csm.py'nin grafik arayüzlü sürümü. Dört sekme:
 
   • Claude Code  → masaüstü sohbetleri
   • Cowork       → agent oturumları (kayıt + yan klasörleriyle birlikte)
   • Claude ⇄ Codex → Claude Code ve Codex oturumları arasında dönüştürme (csbridge.py)
+  • Yedek / Aktar → oturum paketlerini dışa/içe aktarma (cspack.py)
 
 Kaynak/hedef hesaplar e-posta ile gösterilir (çözülemezse kısa UUID), son
 aktiviteye göre sıralanır; hedef bilinçli seçilir (otomatik seçilmez).
@@ -157,7 +158,6 @@ def run_gui():
                 .pack(fill="x", pady=(0, 6))
 
             paned = ttk.Panedwindow(self, orient="horizontal")
-            paned.pack(fill="both", expand=True)
 
             left = ttk.Frame(paned, padding=(0, 0, 6, 0))
             paned.add(left, weight=3)
@@ -193,9 +193,13 @@ def run_gui():
             self.tree.tag_configure("odd", background=CLR_STRIPE)
             self.tree.tag_configure("notr", foreground=CLR_DANGER)
             vsb = ttk.Scrollbar(tw, orient="vertical", command=self.tree.yview)
-            self.tree.configure(yscrollcommand=vsb.set)
-            self.tree.pack(side="left", fill="both", expand=True)
-            vsb.pack(side="right", fill="y")
+            hsb = ttk.Scrollbar(tw, orient="horizontal", command=self.tree.xview)
+            self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+            self.tree.grid(row=0, column=0, sticky="nsew")
+            vsb.grid(row=0, column=1, sticky="ns")
+            hsb.grid(row=1, column=0, sticky="ew")
+            tw.rowconfigure(0, weight=1)
+            tw.columnconfigure(0, weight=1)
             self.tree.bind("<<TreeviewSelect>>", self.on_select)
 
             self.preview_frame = ttk.Labelframe(paned, padding=10)
@@ -213,7 +217,7 @@ def run_gui():
             self.preview.configure(state="disabled")
 
             trow = ttk.Frame(self, padding=(0, 6))
-            trow.pack(fill="x")
+            trow.pack(side="bottom", fill="x")
             self.lbl_target = ttk.Label(trow, style="Bold.TLabel")
             self.lbl_target.pack(side="left")
             self.target_combo = ttk.Combobox(trow, state="readonly", width=44)
@@ -224,7 +228,7 @@ def run_gui():
             self.cleanup_btn.pack(side="right", padx=4)
 
             self.log_frame = ttk.Labelframe(self, padding=6)
-            self.log_frame.pack(fill="both", expand=False, pady=(4, 0))
+            self.log_frame.pack(side="bottom", fill="x", before=trow, pady=(4, 0))
             self.log = scrolledtext.ScrolledText(self.log_frame, height=6, wrap="word",
                                                  font=("Consolas", 9), relief="flat")
             self.log.pack(fill="both", expand=True)
@@ -232,6 +236,7 @@ def run_gui():
             self.log.tag_config("warn", foreground=CLR_BANNER)
             self.log.tag_config("err", foreground=CLR_DANGER)
             self.log.configure(state="disabled")
+            paned.pack(fill="both", expand=True)
 
         # ---- i18n ----
         def acc_label(self, acc):
@@ -514,7 +519,6 @@ def run_gui():
             ttk.Label(drow, textvariable=self.count_var, style="Muted.TLabel").pack(side="right")
 
             paned = ttk.Panedwindow(self, orient="horizontal")
-            paned.pack(fill="both", expand=True)
             tw = ttk.Frame(paned, padding=(0, 0, 6, 0))
             paned.add(tw, weight=3)
             self.tree = ttk.Treeview(tw, columns=[c for c, _ in self.HEADINGS],
@@ -526,9 +530,13 @@ def run_gui():
                 self.tree.column(col, width=w, anchor=anc, stretch=stretch)
             self.tree.tag_configure("odd", background=CLR_STRIPE)
             vsb = ttk.Scrollbar(tw, orient="vertical", command=self.tree.yview)
-            self.tree.configure(yscrollcommand=vsb.set)
-            self.tree.pack(side="left", fill="both", expand=True)
-            vsb.pack(side="right", fill="y")
+            hsb = ttk.Scrollbar(tw, orient="horizontal", command=self.tree.xview)
+            self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+            self.tree.grid(row=0, column=0, sticky="nsew")
+            vsb.grid(row=0, column=1, sticky="ns")
+            hsb.grid(row=1, column=0, sticky="ew")
+            tw.rowconfigure(0, weight=1)
+            tw.columnconfigure(0, weight=1)
             self.tree.bind("<<TreeviewSelect>>", self.on_select)
 
             self.preview_frame = ttk.Labelframe(paned, padding=10)
@@ -546,7 +554,7 @@ def run_gui():
             self.preview.configure(state="disabled")
 
             orow = ttk.Frame(self, padding=(0, 6))
-            orow.pack(fill="x")
+            orow.pack(side="bottom", fill="x")
             self.reg_codex_var = tk.BooleanVar(value=True)
             self.reg_codex_chk = ttk.Checkbutton(orow, variable=self.reg_codex_var)
             self.lbl_reg_claude = ttk.Label(orow, style="Bold.TLabel")
@@ -555,7 +563,7 @@ def run_gui():
             self.convert_btn.pack(side="right", padx=4)
 
             self.log_frame = ttk.Labelframe(self, padding=6)
-            self.log_frame.pack(fill="both", expand=False, pady=(4, 0))
+            self.log_frame.pack(side="bottom", fill="x", before=orow, pady=(4, 0))
             self.log = scrolledtext.ScrolledText(self.log_frame, height=6, wrap="word",
                                                  font=("Consolas", 9), relief="flat")
             self.log.pack(fill="both", expand=True)
@@ -563,6 +571,8 @@ def run_gui():
             self.log.tag_config("warn", foreground=CLR_BANNER)
             self.log.tag_config("err", foreground=CLR_DANGER)
             self.log.configure(state="disabled")
+
+            paned.pack(fill="both", expand=True)
 
         # ---- durum / state ----
         def direction(self):
@@ -783,9 +793,13 @@ def run_gui():
                 self.tree.column(col, width=w, anchor=anc, stretch=stretch)
             self.tree.tag_configure("odd", background=CLR_STRIPE)
             vsb = ttk.Scrollbar(tw, orient="vertical", command=self.tree.yview)
-            self.tree.configure(yscrollcommand=vsb.set)
-            self.tree.pack(side="left", fill="both", expand=True)
-            vsb.pack(side="right", fill="y")
+            hsb = ttk.Scrollbar(tw, orient="horizontal", command=self.tree.xview)
+            self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+            self.tree.grid(row=0, column=0, sticky="nsew")
+            vsb.grid(row=0, column=1, sticky="ns")
+            hsb.grid(row=1, column=0, sticky="ew")
+            tw.rowconfigure(0, weight=1)
+            tw.columnconfigure(0, weight=1)
             self.tree.bind("<<TreeviewSelect>>", lambda e: self.on_select())
 
             right = ttk.Frame(paned)
@@ -793,10 +807,10 @@ def run_gui():
 
             # --- dışa aktarma seçenekleri
             self.export_box = ttk.Labelframe(right, padding=10)
-            self.part_vars = {k: tk.BooleanVar(value=True)
-                              for k in ("memory", "scratch", "extras")}
+            self.PART_KEYS = ("memory", "scratch", "extras", "session", "project")
+            self.part_vars = {k: tk.BooleanVar(value=True) for k in self.PART_KEYS}
             self.part_chks = {}
-            for key in ("memory", "scratch", "extras"):
+            for key in self.PART_KEYS:
                 chk = ttk.Checkbutton(self.export_box, variable=self.part_vars[key],
                                       command=self.update_size)
                 chk.pack(anchor="w", pady=2)
@@ -869,14 +883,13 @@ def run_gui():
                                   if self.bundle_path else self.tr.t("g_pk_nofile"))
 
         def include_parts(self):
+            groups = {"memory": ("memory",), "scratch": ("scratch",),
+                      "extras": ("extras", "codex_extras"),
+                      "session": tuple(cspack.SESSION_DIRS), "project": ("project_config",)}
             inc = set(cspack.DEFAULT_PARTS)
-            if not self.part_vars["memory"].get():
-                inc.discard("memory")
-            if not self.part_vars["scratch"].get():
-                inc.discard("scratch")
-            if not self.part_vars["extras"].get():
-                inc.discard("extras")
-                inc.discard("codex_extras")
+            for key, parts in groups.items():
+                if not self.part_vars[key].get():
+                    inc -= set(parts)
             return inc
 
         def selected_items(self):
@@ -1104,6 +1117,7 @@ def run_gui():
                     res = cspack.import_entry(
                         self.bundle_path, e, account=acc, cwd_map=self.cwd_map,
                         overwrite_memory=self.overwrite_mem_var.get(),
+                        overwrite_project=self.overwrite_mem_var.get(),
                         register_codex=self.reg_codex_var.get(), manifest=self.manifest,
                         conflict_cb=on_conflict)
                     if res["status"] == "failed":
@@ -1121,6 +1135,9 @@ def run_gui():
                     if res.get("skipped_memory"):
                         self.logln("      " + self.tr.t("pk_mem_skipped",
                                                         n=len(res["skipped_memory"])).strip())
+                    if res.get("skipped_project"):
+                        self.logln("      " + self.tr.t("pk_project_skipped",
+                                                        n=len(res["skipped_project"])).strip())
                     for w in res["warn"]:
                         self.logln("      [!] " + str(w), "warn")
                     ok += 1

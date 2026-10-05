@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Oturum paketi — dışa/içe aktarma (cspack.py)  /  Session bundle export & import
+Oturum paketi - dışa/içe aktarma (cspack.py)  /  Session bundle export & import
 ==============================================================================
-Bir oturumu **tek dosyaya** (.csmpack — aslında bir zip) yedekler ve başka bir
+Bir oturumu **tek dosyaya** (.csmpack - aslında bir zip) yedekler ve başka bir
 bilgisayarda istenen hesaba geri yükler. Oturumun her parçası pakete girer:
 
   Claude Code : local_*.json kaydı + transkript (.jsonl)
-                + projects/<proje>/<oturum>/   (tool-results, subagents …)
+                + projects/<proje>/<oturum>/   (tool-results, subagents/agent-*.jsonl)
                 + projects/<proje>/memory/     (hafıza dosyaları)
-                + %TEMP%/claude/<proje>/<oturum>/  (scratchpad, tasks …)
+                + %TEMP%/claude/<proje>/<oturum>/  (scratchpad, arka plan görevleri)
+                + ~/.claude/file-history/<oturum>/ (düzenleme geçmişi / geri alma)
+                + ~/.claude/session-env/<oturum>/  (oturum ortam betikleri)
+                + ~/.claude/tasks/<oturum>/        (görev listesi)
+                + <cwd>/.claude/               (agent, skill, komut tanımları - isteğe bağlı)
   Cowork      : local_*.json kaydı + yanındaki local_<uuid>/ klasörü
                 (audit.jsonl, outputs, uploads, .claude …)
   Codex       : rollout-*.jsonl + visualizations/<tarih>/<thread>/
@@ -47,14 +51,19 @@ BUNDLE_VERSION = 1
 BUNDLE_EXT = ".csmpack"
 
 # Parça adları: hangi veri nereye ait
-PARTS = ("record", "transcript", "extras", "memory", "scratch", "companion",
-         "rollout", "codex_extras")
+PARTS = ("record", "transcript", "extras", "memory", "scratch", "file_history",
+         "session_env", "todos", "project_config", "companion", "rollout", "codex_extras")
 # Varsayılan olarak her şey
 DEFAULT_PARTS = set(PARTS)
+# Oturum kimliğine (cliSessionId) göre adlandırılmış ~/.claude alt klasörleri
+SESSION_DIRS = {"file_history": "file-history", "session_env": "session-env", "todos": "tasks"}
 # İçeriği metin olarak yeniden yazılmayacak (ikili) dosyalar
 BINARY_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico", ".pdf", ".zip", ".gz",
               ".7z", ".rar", ".mp3", ".mp4", ".wav", ".mov", ".webm", ".exe", ".dll", ".so",
               ".dylib", ".sqlite", ".db", ".bin", ".woff", ".woff2", ".ttf", ".otf", ".pyc"}
+# Proje .claude klasörü paketlenirken atlanan bağımlılık/önbellek klasörleri
+SKIP_DIRS = {"node_modules", "__pycache__", ".venv", "venv", "env", ".git", "dist", "build",
+             ".cache", "cache", ".next", ".turbo", "target", "vendor"}
 
 
 # -------------------------------------------------------------------
@@ -70,6 +79,19 @@ def claude_scratch_dir(project_dir_name: str, cli: str):
     if not project_dir_name or not cli:
         return None
     return claude_temp_root() / project_dir_name / cli
+
+
+def claude_home() -> Path:
+    """~/.claude kökü (projects klasörünün üstü)."""
+    return csm.projects_dir().parent
+
+
+def claude_session_dir(part: str, cli: str):
+    """Oturum kimliğiyle adlandırılmış ~/.claude alt klasörü (file-history, tasks …)."""
+    sub = SESSION_DIRS.get(part)
+    if not sub or not cli:
+        return None
+    return claude_home() / sub / cli
 
 
 def codex_thread_dirs(thread_id: str, when_ms=None):
@@ -94,9 +116,11 @@ def _project_dir_name(sess) -> str:
     return csbridge.claude_project_dir_name(sess.get("cwd") or "")
 
 
-def _dir_stats(path):
+def _dir_stats(path, skip_dirs=None):
     n = total = 0
-    for dp, _dn, fn in os.walk(path):
+    for dp, dn, fn in os.walk(path):
+        if skip_dirs:
+            dn[:] = [d for d in dn if d not in skip_dirs]
         for f in fn:
             try:
                 total += os.path.getsize(os.path.join(dp, f))
@@ -126,7 +150,8 @@ def session_sources(item) -> dict:
             out["codex_extras"] = ([(name, p) for name, p in dirs], "multi")
         return out
 
-    out["record"] = (Path(s["path"]), "file")
+    if s.get("path"):          # masaüstü kaydı olmayan oturumlarda yok
+        out["record"] = (Path(s["path"]), "file")
     if kind == "cowork":
         if s.get("folder") and Path(s["folder"]).is_dir():
             out["companion"] = (Path(s["folder"]), "dir")
@@ -149,6 +174,16 @@ def session_sources(item) -> dict:
     scratch = claude_scratch_dir(proj, cli)
     if scratch and scratch.is_dir():
         out["scratch"] = (scratch, "dir")
+    # ~/.claude altında oturum kimliğiyle duran klasörler
+    for part in SESSION_DIRS:
+        d = claude_session_dir(part, cli)
+        if d and d.is_dir():
+            out[part] = (d, "dir")
+    # Projenin kendi .claude klasörü: agent / skill / komut tanımları, hook ayarları
+    if cwd:
+        pc = Path(cwd) / ".claude"
+        if pc.is_dir():
+            out["project_config"] = (pc, "dir")
     return out
 
 
@@ -165,16 +200,18 @@ def estimate_size(items, include=None, quick=False) -> int:
             elif quick:
                 continue
             elif typ == "dir":
-                total += _dir_stats(src)[1]
+                total += _dir_stats(src, SKIP_DIRS if name == "project_config" else None)[1]
             else:
                 for _n, p in src:
                     total += _dir_stats(p)[1]
     return total
 
 
-def _zip_dir(z, src: Path, prefix: str, progress=None, skip=None):
+def _zip_dir(z, src: Path, prefix: str, progress=None, skip=None, skip_dirs=None):
     n = total = 0
-    for dp, _dn, fn in os.walk(src):
+    for dp, dn, fn in os.walk(src):
+        if skip_dirs:
+            dn[:] = [d for d in dn if d not in skip_dirs]
         for f in fn:
             p = Path(dp) / f
             # Paket dosyası taranan klasörün içindeyse kendini paketlemesin
@@ -239,7 +276,8 @@ def export_bundle(items, out_path, include=None, progress=None) -> dict:
                                                 "name": Path(src).name,
                                                 "bytes": Path(src).stat().st_size}
                     elif typ == "dir":
-                        n, b = _zip_dir(z, Path(src), prefix, progress, skip_self)
+                        n, b = _zip_dir(z, Path(src), prefix, progress, skip_self,
+                                        SKIP_DIRS if name == "project_config" else None)
                         entry["parts"][name] = {"type": "dir", "path": prefix,
                                                 "name": Path(src).name, "files": n, "bytes": b}
                     else:  # multi: [(ad, yol), …]
@@ -331,7 +369,7 @@ def default_cwd_map(manifest) -> dict:
 
 
 # -------------------------------------------------------------------
-# YOL / METİN UYARLAMA — PATH REMAPPING
+# YOL / METİN UYARLAMA - PATH REMAPPING
 # -------------------------------------------------------------------
 
 def _replacement_pairs(manifest, src_cwd, dst_cwd):
@@ -462,7 +500,7 @@ def _copy_tree(src: Path, dst: Path, overwrite=True, skipped=None):
 
 def import_entry(zip_path, entry, account=None, cwd_map=None, include=None,
                  overwrite_memory=False, register_codex=True, manifest=None,
-                 conflict_cb=None, progress=None) -> dict:
+                 conflict_cb=None, progress=None, overwrite_project=False) -> dict:
     """
     Paketteki bir oturumu bu bilgisayara geri yükler.
     account: Claude hesabı (code/cowork için; None ise masaüstü kaydı yazılmaz)
@@ -476,7 +514,7 @@ def import_entry(zip_path, entry, account=None, cwd_map=None, include=None,
     dst_cwd = (cwd_map or {}).get(src_cwd) or src_cwd or str(Path.home())
     pairs = _replacement_pairs(manifest, src_cwd, dst_cwd)
     result = {"status": "ok", "paths": [], "warn": [], "cli": entry.get("cli_session_id"),
-              "rel": None, "skipped_memory": []}
+              "rel": None, "skipped_memory": [], "skipped_project": []}
     stage = Path(tempfile.mkdtemp(prefix="csm-import-"))
     try:
         with zipfile.ZipFile(zip_path) as z:
@@ -550,13 +588,33 @@ def import_entry(zip_path, entry, account=None, cwd_map=None, include=None,
                 if written:
                     new_entry = csm.load_entry(written[0]) or {}
                     final_cli = new_entry.get("cliSessionId") or cli
-        elif rec_src:
+        elif account is not None and entry["kind"] == "code" and cli:
+            # Pakette masaüstü kaydı yok (terminalde açılmış oturum): hedef hesapta üret
+            written, errs = csbridge.register_claude_desktop(
+                account, cli, dst_cwd, entry.get("title") or cli,
+                entry.get("last"), entry.get("turns") or 0)
+            result["warn"] += errs
+            result["paths"] += written
+        elif account is None:
             result["warn"].append("no account selected: desktop record not written")
 
-        # Scratchpad (nihai oturum kimliğine göre)
+        # Oturum kimliğine bağlı klasörler (kimlik kopyalama sırasında değişmiş olabilir)
         if parts.get("scratch") and final_cli:
             dst = claude_temp_root() / proj_dir.name / final_cli
             _copy_tree(parts["scratch"], dst)
+            result["paths"].append(dst)
+        for part, sub in SESSION_DIRS.items():
+            if parts.get(part) and final_cli:
+                dst = claude_home() / sub / final_cli
+                _copy_tree(parts[part], dst)
+                result["paths"].append(dst)
+        # Projenin .claude klasörü: var olan dosyalara dokunma (repo'daki ayarlar ezilmesin)
+        if parts.get("project_config"):
+            skipped = []
+            dst = Path(dst_cwd) / ".claude"
+            _copy_tree(parts["project_config"], dst,
+                       overwrite=overwrite_project, skipped=skipped)
+            result["skipped_project"] = skipped
             result["paths"].append(dst)
         result["cli"] = final_cli
         return result

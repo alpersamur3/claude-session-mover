@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Claude Sohbet Taşıyıcı — Terminal (csm.py)  /  Claude Chat Mover — CLI
+Claude Sohbet Taşıyıcı - Terminal (csm.py)  /  Claude Chat Mover - CLI
 =====================================================================
 Claude masaüstü uygulamasının oturum kayıtlarını (local_*.json) bir hesaptan
 diğerine kopyalar/üzerine yazar. İki oturum tipi desteklenir:
@@ -166,7 +166,7 @@ def build_email_index(kinds=("cowork", "code")) -> dict:
 
 def human_size(n) -> str:
     if n is None:
-        return "—"
+        return " - "
     try:
         n = float(n)
     except Exception:
@@ -520,7 +520,7 @@ def clone_transcript_for_target(src_path, dst_path, src_cli, new_cli,
 
     Kritik: Claude masaüstü uygulaması aynı .jsonl dosyasını farklı hesaplarda
     açarken transkript içindeki ownerAccountUuid'i kontrol ediyor. Bu yüzden
-    hedef için AYRI bir .jsonl (yeni cliSessionId adıyla) üretiyoruz — kaynak
+    hedef için AYRI bir .jsonl (yeni cliSessionId adıyla) üretiyoruz - kaynak
     hesap kendi orijinal dosyasını açmaya devam edebilir.
     """
     src = Path(src_path)
@@ -645,7 +645,10 @@ def perform_copy(bases, session, rel, email_pair=None):
         target_org = rel.parts[1] if len(rel.parts) >= 2 else None
         new_cli = str(uuid.uuid4())
         # Hedef için ayrı transkript
-        dst_tr = transcript_path_for(new_cli, cwd)
+        # Gerçek transkript klasörünü kullan: eski adlandırma, özel karakterler
+        # veya kısaltılmış/hash'li klasörler cwd'den farklı hesaplanabilir.
+        project_dir = Path(src_transcript).parent
+        dst_tr = project_dir / f"{new_cli}.jsonl"
         try:
             clone_transcript_for_target(src_transcript, dst_tr,
                                         src_cli, new_cli,
@@ -654,8 +657,8 @@ def perform_copy(bases, session, rel, email_pair=None):
             errs.append(f"transcript clone: {dst_tr} ({e})")
         # Varsa yan klasör (subagents, tool-results)
         try:
-            src_extras = session_extras_dir(src_cli, cwd)
-            dst_extras = session_extras_dir(new_cli, cwd)
+            src_extras = project_dir / src_cli if src_cli else None
+            dst_extras = project_dir / new_cli
             if src_extras and Path(src_extras).is_dir() and dst_extras:
                 clone_extras_for_target(src_extras, dst_extras,
                                         src_cli, new_cli,
@@ -1005,11 +1008,16 @@ def _load_pack():
 
 
 def all_sessions_for_pack(email_map=None):
-    """Paketlenebilecek tüm oturumlar: Claude Code, Cowork ve Codex."""
+    """Paketlenebilecek tüm oturumlar: Claude Code, Cowork ve Codex.
+
+    Masaüstü kaydı (local_*.json) olmayan, yalnızca terminalde açılmış Claude Code
+    oturumları da listeye girer; bunların kaydı geri yüklerken hedef hesapta üretilir.
+    """
     import csbridge
     cspack = _load_pack()
     email_map = email_map or build_email_index()
     items = []
+    seen_cli = set()
     for kind in ("code", "cowork"):
         bases = existing_bases(kind)
         if not bases:
@@ -1017,7 +1025,18 @@ def all_sessions_for_pack(email_map=None):
         tindex = build_transcript_index() if kind == "code" else {}
         for acc in load_accounts(bases[0], tindex, kind, email_map):
             for s in acc["sessions"]:
+                if kind == "code" and s.get("cli"):
+                    seen_cli.add(s["cli"])
                 items.append(cspack.make_item(kind, s, acc))
+    for s in csbridge.list_claude_sessions(email_map):
+        if s["id"] in seen_cli:
+            continue
+        items.append(cspack.make_item("code", {
+            "kind": "code", "path": None, "entry": {}, "rel": None,
+            "title": s["title"], "cwd": s["cwd"], "cli": s["id"], "sid": None,
+            "last": s["last"], "transcript": s["path"], "folder": None,
+            "rec_size": None, "tr_size": s["size"],
+        }, None))
     for s in csbridge.list_codex_sessions():
         items.append(cspack.make_item("codex", s))
     items.sort(key=lambda it: it["session"].get("last") or 0, reverse=True)
@@ -1059,7 +1078,9 @@ def pack_export_main(cspack):
     picked = [items[i] for i in _pick_numbers(min(len(items), 40), "pk_prompt_pick")]
     include = set(cspack.DEFAULT_PARTS)
     if not yes(ask("\n" + tr.t("pk_all_q"))):
-        include -= {"memory", "scratch", "extras", "codex_extras"}
+        include -= {"memory", "scratch", "extras", "codex_extras"} | set(cspack.SESSION_DIRS)
+    if not yes(ask(tr.t("pk_project_q"))):
+        include.discard("project_config")
     size = cspack.estimate_size(picked, include)
     default = str(Path.cwd() / cspack.default_bundle_name(picked))
     out = ask(tr.t("pk_out_q", d=default)) or default
@@ -1125,7 +1146,7 @@ def pack_import_main(cspack, path=None):
             print(tr.t("invalid"))
         if account is None:
             print(tr.t("br_no_account_warn"))
-    overwrite_mem = yes(ask("\n" + tr.t("pk_mem_q")))
+    overwrite_mem = yes(ask("\n" + tr.t("pk_overwrite_q")))
     register_codex = True
     if any(e["kind"] == "codex" for e in chosen):
         register_codex = yes(ask(tr.t("pk_reg_codex_q")))
@@ -1145,6 +1166,7 @@ def pack_import_main(cspack, path=None):
             acc = cspack.account_for(e["kind"], account["id"], build_email_index())
         res = cspack.import_entry(path, e, account=acc if e["kind"] != "codex" else None,
                                   cwd_map=cwd_map, overwrite_memory=overwrite_mem,
+                                  overwrite_project=overwrite_mem,
                                   register_codex=register_codex, manifest=man,
                                   conflict_cb=on_conflict)
         if res["status"] == "failed":
@@ -1160,6 +1182,8 @@ def pack_import_main(cspack, path=None):
             print(tr.t("pk_path", p=p))
         if res.get("skipped_memory"):
             print(tr.t("pk_mem_skipped", n=len(res["skipped_memory"])))
+        if res.get("skipped_project"):
+            print(tr.t("pk_project_skipped", n=len(res["skipped_project"])))
         for w in res["warn"]:
             print(f"    [!] {w}")
         ok += 1
