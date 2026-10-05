@@ -14,10 +14,9 @@ Kullanım / Usage:
     py build.py gui              (yalnızca arayüz / GUI only)
     py build.py cli              (yalnızca terminal / CLI only)
 
-NOT: PyInstaller 6.16 ve öncesi bu projede BOZUK exe üretiyor (üretilen dosyada
-SizeOfImage alanı eksik kalıyor, Windows "geçerli bir uygulama değil" diyor).
-Bu yüzden en az 6.22 gerekir; betik sürümü kontrol eder ve ürettiği dosyayı
-GetBinaryType ile doğrular.
+PyInstaller 6.22+ bu projenin derleme tabanıdır. Betik sürümü kontrol eder ve
+Windows çıktısını GetBinaryType ile doğrular; bu kontrol açılış testi değildir.
+PyInstaller 6.22+ is the build baseline; format validation is not a launch test.
 """
 
 import os
@@ -43,7 +42,7 @@ def check_pyinstaller():
         sys.exit("PyInstaller kurulu değil / not installed:  py -m pip install -U pyinstaller")
     ver = tuple(int(x) for x in PyInstaller.__version__.split(".")[:2])
     if ver < MIN_PYINSTALLER:
-        sys.exit(f"PyInstaller {PyInstaller.__version__} bozuk exe üretiyor / produces broken exes; "
+        sys.exit(f"PyInstaller {PyInstaller.__version__} desteklenmiyor / unsupported build version; "
                  f"en az {'.'.join(map(str, MIN_PYINSTALLER))} gerekli:  py -m pip install -U pyinstaller")
     return PyInstaller.__version__
 
